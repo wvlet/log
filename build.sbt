@@ -55,6 +55,15 @@ lazy val wvletCore =
     )
   ).dependsOn(wvletTest % "test->compile")
 
+lazy val wvletLens =
+  Project(id = "wvlet-lens", base = file("wvlet-lens")).settings(
+    buildSettings,
+    description := "wvlet bi-directional lens module",
+    libraryDependencies ++= Seq(
+      "org.xerial" %% "xerial-lens" % "3.5.0"
+    )
+  ).dependsOn(wvletCore, wvletTest % "test->compile")
+
 lazy val wvletCui =
   Project(id = "wvlet-cui", base = file("wvlet-cui")).settings(
     buildSettings,
@@ -62,7 +71,7 @@ lazy val wvletCui =
     libraryDependencies ++= Seq(
       "org.xerial" %% "xerial-lens" % "3.5.0"    
     )
-  ) dependsOn(wvletCore, wvletTest % "test->compile")
+  ) dependsOn(wvletCore, wvletLens, wvletTest % "test->compile")
 
 lazy val wvletTest =
   Project(id = "wvlet-test", base = file("wvlet-test")).settings(
