@@ -1,6 +1,3 @@
-
-sonatypeProfile := "org.wvlet"
-
 val buildSettings = Seq[Setting[_]](
   scalaVersion := "2.11.8",
   organization := "org.wvlet",
