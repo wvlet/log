@@ -64,6 +64,18 @@ lazy val wvletLens =
     )
   ).dependsOn(wvletCore, wvletTest % "test->compile")
 
+lazy val wvletRest =
+  Project(id = "wvlet-rest", base = file("wvlet-rest")).settings(
+    buildSettings,
+    description := "wvlet for REST applications",
+    libraryDependencies ++= Seq(
+      "javax.ws.rs" % "javax.ws.rs-api" % "2.0.1",
+      "org.xerial" %% "xerial-lens" % "3.5.0",
+      "javax.servlet" % "javax.servlet-api" % "3.1.0",
+      "com.twitter" %% "finagle-http" % "6.34.0"
+    )
+  ).dependsOn(wvletCore, wvletTest % "test->compile")
+
 lazy val wvletCui =
   Project(id = "wvlet-cui", base = file("wvlet-cui")).settings(
     buildSettings,
