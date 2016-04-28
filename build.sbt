@@ -43,7 +43,7 @@ lazy val wvlet =
     publish := {},
     publishLocal := {},
     packExclude := Seq("wvlet")
-  ).aggregate(wvletCore, wvletTest, wvletCui)
+  ).aggregate(wvletCore, wvletLens, wvletJdbc, wvletDataframe, wvletRest, wvletTest, wvletCui)
 
 lazy val wvletCore =
   Project(id = "wvlet-core", base = file("wvlet-core")).settings(
@@ -55,6 +55,14 @@ lazy val wvletCore =
     )
   ).dependsOn(wvletTest % "test->compile")
 
+lazy val wvletText =
+  Project(id = "wvlet-text", base = file("wvlet-text")).settings(
+    buildSettings,
+    description := "wvlet text-format mapping",
+    libraryDependencies ++= Seq(
+    )
+  ).dependsOn(wvletCore, wvletTest % "test->compile")
+
 lazy val wvletLens =
   Project(id = "wvlet-lens", base = file("wvlet-lens")).settings(
     buildSettings,
@@ -63,6 +71,23 @@ lazy val wvletLens =
       "org.xerial" %% "xerial-lens" % "3.5.0"
     )
   ).dependsOn(wvletCore, wvletTest % "test->compile")
+
+lazy val wvletJdbc =
+  Project(id = "wvlet-jdbc", base = file("wvlet-jdbc")).settings(
+    buildSettings,
+    description := "wvlet jdbc mapping",
+    libraryDependencies ++= Seq(
+    )
+  ).dependsOn(wvletCore, wvletTest % "test->compile")
+
+lazy val wvletDataframe =
+  Project(id = "wvlet-dataframe", base = file("wvlet-dataframe")).settings(
+    buildSettings,
+    description := "wvlet dataframe mapping",
+    libraryDependencies ++= Seq(
+    )
+  ).dependsOn(wvletCore, wvletTest % "test->compile")
+
 
 lazy val wvletRest =
   Project(id = "wvlet-rest", base = file("wvlet-rest")).settings(
