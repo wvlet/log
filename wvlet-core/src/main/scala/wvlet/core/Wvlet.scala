@@ -1,33 +1,34 @@
 package wvlet.core
 
+import wvlet.core.tablet.Tablet
 
-object Wvlet {
+trait Context
 
-  sealed trait Type
-  case object LONG extends Type
-  case object DOUBLE extends Type
-  case object BOOLEAN extends Type
-  case object STRING extends Type
-  case object TIMESTAMP extends Type
-  case object JSON extends Type
-  case object BINARY extends Type
-  case class ARRAY(elemType: Type)
-  case class MAP(keyType: Type, valueType: Type)
+trait Router {
+  /**
+    * Find a destination tablet for the given context
+    */
+  def findTablet(context:Context) : Tablet
+}
 
-  case class Column(name: String, dataType: Type)
+  case class Wvlet(name: String, router: Router)
 
-  case class Table(name: String, column: Seq[Column])
-  trait Context {
-    def name:String
+trait Input {
+
+
+
+}
+
+trait Output[A] {
+
+  def onCompleted
+  def onError(cause:Throwable)
+  def onNext(e:A)
+}
+
+trait WvletInput {
+
+  def process(context:Context, input:Input, output:Output) {
   }
-  case class Wvlet(name: String, tablets: Map[Context, Table])
-
-  trait WvletInput {
-    def wvlet: Wvlet
-
-    
-
-  }
-
 
 }
