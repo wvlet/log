@@ -4,13 +4,8 @@ import wvlet.core.time.TimeStamp
 
 
 
-trait TabletWriter[Record] {
-
-  def tablet : Tablet
-  def write(record:Record)
-
-  def startRecord
-  def endRecord
+trait TabletWriter {
+  def writeRecord(body: => Unit)
 
   def writeNull
   def writeLong(v: Long)

@@ -37,18 +37,21 @@ object ObjectWriter {
 /**
   *
   */
-class ObjectWriter[A: ClassTag](name: String) extends TabletWriter[A] {
+class ObjectWriter[A: ClassTag](name: String, output:TabletWriter) {
 
   import ObjectWriter._
 
   val schema = ObjectSchema.of[A]
   val tablet = createTabletOf[A](name)
 
+
+
   def write(record: A) {
-    output.startRecord
+    output.writeRecord {
+      
 
 
-    output.endRecord
+    }
   }
 
 }

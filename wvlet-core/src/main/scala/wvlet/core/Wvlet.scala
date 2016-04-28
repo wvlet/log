@@ -20,11 +20,13 @@ trait Input {
 }
 
 trait Output[A] {
-
   def onCompleted
   def onError(cause:Throwable)
   def onNext(e:A)
 }
+
+trait Producer[A]
+
 
 trait WvletInput {
 
