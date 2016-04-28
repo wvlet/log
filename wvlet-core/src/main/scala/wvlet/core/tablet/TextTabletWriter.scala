@@ -1,6 +1,6 @@
 package wvlet.core.tablet
 
-import wvlet.core.{Output, Producer}
+import wvlet.core.{Observer, Output}
 import wvlet.core.time.TimeStamp
 import xerial.lens.{Primitive, TypeConverter}
 
@@ -61,7 +61,7 @@ import TextTabletWriter._
 /**
   *
   */
-class TextTabletWriter(formatter:RecordFormatter, next:Output[String]) extends TabletWriter with Producer[String] {
+class TextTabletWriter(formatter:RecordFormatter, next:Observer[String]) extends TabletWriter {
 
   protected val record = Seq.newBuilder[String]
 
