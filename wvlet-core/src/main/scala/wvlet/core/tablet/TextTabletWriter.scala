@@ -1,6 +1,5 @@
 package wvlet.core.tablet
 
-import wvlet.core.{Observer, Output}
 import wvlet.core.time.TimeStamp
 import xerial.lens.{Primitive, TypeConverter}
 
@@ -122,7 +121,7 @@ class TextTabletWriter(formatter:RecordFormatter, next:Subscriber[String]) exten
 
 
 class JSONTabletWriter(next: Subscriber[String]) extends TextTabletWriter(JSONRecordFormatter, next)
-class CSVTabletWriterr(next: Subscriber[String]) extends TextTabletWriter(CSVRecordFormatter, next)
+class CSVTabletWriter(next: Subscriber[String]) extends TextTabletWriter(CSVRecordFormatter, next)
 class TSVTabletWriter(next: Subscriber[String]) extends TextTabletWriter(TSVRecordFormatter, next)
 
 

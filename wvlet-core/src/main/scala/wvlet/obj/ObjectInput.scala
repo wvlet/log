@@ -38,15 +38,19 @@ object ObjectWriter {
 /**
   *
   */
-class ObjectWriter[A: ClassTag](name: String) extends WvletInput[A] {
+class ObjectWvlet[A: ClassTag] extends WvletInput[A] {
   val objSchema = ObjectSchema.of[A]
 
   // TODO Create data conversion operator using Tablet
   //val tablet = createSchemaOf[A](name)
 
-  def write(record:A, output:TabletWriter) {
+  override def |[Out](next:WvletOutput[Out]) : Wvlet[A, Out] = new Wvlet[A, Out] {
+    override def apply(in: Seq[A]): WvletSeq[Out] = ???
+  }
+
+  def write(record: A, output: TabletWriter) {
     output.writeRecord {
-      for(p <- objSchema.parameters) {
+      for (p <- objSchema.parameters) {
         val v = p.get(record)
         if (v == null) {
           output.writeNull
@@ -78,6 +82,6 @@ class ObjectWriter[A: ClassTag](name: String) extends WvletInput[A] {
       }
     }
   }
-
 }
+
 

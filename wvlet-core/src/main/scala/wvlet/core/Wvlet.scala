@@ -1,8 +1,9 @@
 package wvlet.core
 
-import wvlet.core.tablet.{Tablet, TabletWriter}
+import wvlet.core.WvletOps.SeqOp
+import wvlet.core.tablet.{Tablet, TabletReader, TabletWriter}
 import wvlet.core.rx.ReactiveStream._
-import wvlet.core.rx.SubscriberBridge
+import wvlet.core.rx.{SeqSubscriber, SubscriberBridge}
 
 import scala.reflect.ClassTag
 
@@ -16,33 +17,16 @@ trait Router {
 }
 
 /**
-  * In -> Tablet converter
+  * A -> Tablet -> A converter
   *
-  * @tparam In
+  * @tparam A
   */
-trait WvletInput[In] {
-  def |[Out](next: WvletOutput[Out]): Wvlet[In, Out] = null
-  def write(record: In, output: TabletWriter)
+trait Input[A] {
+  def write(record: A, output: TabletWriter)
 }
 
-trait WvletSeq[Input] {
-  def mkString(delimiter: String = ""): String
-
-}
-
-trait Wvlet[In, Out] extends WvletInput[Out] {
-  def apply(in: Seq[In]): WvletSeq[Out]
-
-  def subscribe(subscriber: Subscriber[Out]) {
-    subscriber.onStart
-    subscriber.read(Long.MaxValue)
-  }
-  def subscribe[U](handler: Out => U) = {
-    val s = new SubscriberBridge[Out, U]() {
-      override def onNext(elem: Out): Unit = handler(elem)
-    }
-    subscribe(s)
-  }
+trait Output[A] {
+  def read(input:TabletReader) : A
 }
 
 /**
@@ -54,13 +38,11 @@ trait WvletOutput[Out] {
 
 }
 
+import WvletOps._
+
 object Wvlet {
 
-  def create[A: ClassTag](seq: Seq[A]): WvletInput[A] = null
-
-  def tabletOf[A: ClassTag]: WvletInput[A] = {
-    null
-  }
+  def create[A: ClassTag](seq: Seq[A]) = SeqOp(seq)
 
   def json: WvletOutput[String] = null
   def tsv: WvletOutput[String] = null
