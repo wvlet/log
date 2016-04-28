@@ -20,7 +20,9 @@ object Tablet {
 
 case class Column(name: String, dataType: Tablet.Type)
 
-case class Tablet(name: String, column: Seq[Column]) {
+trait Tablet
+
+case class Schema(name: String, column: Seq[Column]) {
   private lazy val columnIdx : Map[Column, Int] = column.zipWithIndex.toMap[Column, Int]
 
   /**

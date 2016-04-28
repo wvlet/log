@@ -1,14 +1,14 @@
 package wvlet.obj
 
-import wvlet.core.{Wvlet, WvletSeq}
-import wvlet.core.tablet.{Column, Tablet, TabletWriter}
+import wvlet.core.{Wvlet, WvletInput, WvletOutput, WvletSeq}
+import wvlet.core.tablet.{Column, Schema, Tablet, TabletWriter}
 import xerial.lens.{ObjectSchema, Primitive, TextType, TypeConverter}
 
 import scala.reflect.ClassTag
 
 object ObjectWriter {
 
-  def createTabletOf[A: ClassTag](name: String): Tablet = {
+  def createScheamOf[A: ClassTag](name: String): Schema = {
     val schema = ObjectSchema.of[A]
     val tabletColumnTypes: Seq[Column] = for (p <- schema.parameters) yield {
       val vt = p.valueType
@@ -30,7 +30,7 @@ object ObjectWriter {
       }
       Column(p.name, columnType)
     }
-    Tablet(name, tabletColumnTypes)
+    Schema(name, tabletColumnTypes)
   }
 
 }
@@ -38,26 +38,15 @@ object ObjectWriter {
 /**
   *
   */
-class ObjectWriter[A: ClassTag](name: String, output:TabletWriter) extends Wvlet[A, Tablet] {
-
-  import ObjectWriter._
-
-  val schema = ObjectSchema.of[A]
+class ObjectWriter[A: ClassTag](name: String) extends WvletInput[A] {
+  val objSchema = ObjectSchema.of[A]
 
   // TODO Create data conversion operator using Tablet
-  val tablet = createTabletOf[A](name)
+  //val tablet = createSchemaOf[A](name)
 
-
-  override def |[R](next: Wvlet[Tablet, R]): Wvlet[A, R] = ???
-  override def apply(in: Seq[A]): WvletSeq[Tablet] = {
-
-
-
-  }
-
-  def write(record: A) {
+  def write(record:A, output:TabletWriter) {
     output.writeRecord {
-      for(p <- schema.parameters) {
+      for(p <- objSchema.parameters) {
         val v = p.get(record)
         if (v == null) {
           output.writeNull
@@ -89,4 +78,5 @@ class ObjectWriter[A: ClassTag](name: String, output:TabletWriter) extends Wvlet
       }
     }
   }
+
 }
