@@ -57,11 +57,11 @@ object TextTabletWriter {
 }
 
 import TextTabletWriter._
-
+import wvlet.core.rx.ReactiveStream._
 /**
   *
   */
-class TextTabletWriter(formatter:RecordFormatter, next:Observer[String]) extends TabletWriter {
+class TextTabletWriter(formatter:RecordFormatter, next:Subscriber[String]) extends TabletWriter {
 
   protected val record = Seq.newBuilder[String]
 
@@ -121,9 +121,9 @@ class TextTabletWriter(formatter:RecordFormatter, next:Observer[String]) extends
 }
 
 
-class JSONTabletWriter(next: Output[String]) extends TextTabletWriter(JSONRecordFormatter, next)
-class CSVTabletWriterr(next: Output[String]) extends TextTabletWriter(CSVRecordFormatter, next)
-class TSVTabletWriter(next: Output[String]) extends TextTabletWriter(TSVRecordFormatter, next)
+class JSONTabletWriter(next: Subscriber[String]) extends TextTabletWriter(JSONRecordFormatter, next)
+class CSVTabletWriterr(next: Subscriber[String]) extends TextTabletWriter(CSVRecordFormatter, next)
+class TSVTabletWriter(next: Subscriber[String]) extends TextTabletWriter(TSVRecordFormatter, next)
 
 
 

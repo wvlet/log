@@ -80,3 +80,4 @@ class ObjectWriter[A: ClassTag](name: String) extends WvletInput[A] {
   }
 
 }
+
