@@ -14,4 +14,6 @@ package object core {
     }
   }
 
+  val objectLens = ""
+
 }

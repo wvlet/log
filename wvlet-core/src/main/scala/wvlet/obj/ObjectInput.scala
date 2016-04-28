@@ -1,5 +1,6 @@
-package wvlet.`object`
+package wvlet.obj
 
+import wvlet.core.{Wvlet, WvletSeq}
 import wvlet.core.tablet.{Column, Tablet, TabletWriter}
 import xerial.lens.{ObjectSchema, Primitive, TextType, TypeConverter}
 
@@ -37,7 +38,7 @@ object ObjectWriter {
 /**
   *
   */
-class ObjectWriter[A: ClassTag](name: String, output:TabletWriter) {
+class ObjectWriter[A: ClassTag](name: String, output:TabletWriter) extends Wvlet[A, Tablet] {
 
   import ObjectWriter._
 
@@ -45,6 +46,14 @@ class ObjectWriter[A: ClassTag](name: String, output:TabletWriter) {
 
   // TODO Create data conversion operator using Tablet
   val tablet = createTabletOf[A](name)
+
+
+  override def |[R](next: Wvlet[Tablet, R]): Wvlet[A, R] = ???
+  override def apply(in: Seq[A]): WvletSeq[Tablet] = {
+
+
+
+  }
 
   def write(record: A) {
     output.writeRecord {
@@ -80,5 +89,4 @@ class ObjectWriter[A: ClassTag](name: String, output:TabletWriter) {
       }
     }
   }
-
 }

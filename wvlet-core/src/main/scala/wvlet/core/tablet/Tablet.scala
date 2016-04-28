@@ -2,8 +2,8 @@ package wvlet.core.tablet
 
 object Tablet {
   sealed trait Type {
-    def isPrimitive : Boolean
-    def javaType: Class[_]
+    //def isPrimitive : Boolean
+    //def javaType: Class[_]
   }
 
   case object INTEGER extends Type
