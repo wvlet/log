@@ -1,24 +1,75 @@
 package wvlet.core.tablet
 
-import wvlet.core.Output
+import wvlet.core.{Output, Producer}
 import wvlet.core.time.TimeStamp
 import xerial.lens.{Primitive, TypeConverter}
 
 import scala.util.parsing.json.JSONFormat
 
+object TextTabletWriter {
+
+  trait RecordFormatter {
+    def sanitize(s:String) : String = s
+    def format(record:Seq[String]) : String
+  }
+
+  object JSONRecordFormatter extends RecordFormatter {
+    override def sanitize(s: String): String = s"\"${JSONFormat.quoteString(s)}\""
+    override def format(record: Seq[String]): String = {
+      s"[${record.mkString(", ")}]"
+    }
+  }
+
+  object TSVRecordFormatter extends RecordFormatter {
+    override def sanitize(s:String) : String = {
+      s.map {
+        case '\n' => "\\n"
+        case '\r' => "\\r"
+        case '\t' => "\\t"
+        case c => c
+      }.mkString
+    }
+
+    override def format(record: Seq[String]): String = {
+      record.mkString("\t")
+    }
+  }
+
+  object CSVRecordFormatter extends RecordFormatter {
+    override def sanitize(s:String) : String = {
+      var hasComma = false
+      val sanitized = s.map {
+        case '\n' => "\\n"
+        case '\r' => "\\r"
+        case ',' =>
+          hasComma = true
+          ','
+        case c => c
+      }.mkString
+      if(hasComma) s"\"${sanitized}\"" else sanitized
+    }
+
+    override def format(record: Seq[String]): String = {
+      record.mkString(",")
+    }
+  }
+
+}
+
+import TextTabletWriter._
+
 /**
   *
   */
-class TextTabletWriter(next:Output[String]) {
+class TextTabletWriter(formatter:RecordFormatter, next:Output[String]) extends TabletWriter with Producer[String] {
 
-  private val record = Seq.newBuilder[String]
+  protected val record = Seq.newBuilder[String]
 
   def writeRecord(body: => Unit) {
     record.clear()
     body
-    val arr = record.result()
-    val json = s"[${arr.mkString(",")}]"
-    next.onNext(json)
+    val recordText = formatter.format(record.result())
+    next.onNext(recordText)
   }
 
   def writeNull = {
@@ -34,7 +85,7 @@ class TextTabletWriter(next:Output[String]) {
     record += (if (v) "true" else "false")
   }
   def writeString(v: String) = {
-    record += s"\"${JSONFormat.quoteString(v)}\""
+    record += formatter.sanitize(v)
   }
   def writeBinary(v: Array[Byte], offset: Int, length: Int) {
     // TODO
@@ -67,6 +118,12 @@ class TextTabletWriter(next:Output[String]) {
   def writeMap[K, V](v: Map[K, V], keyType: Tablet.Type, valueType: Tablet.Type) {
     // TODO
   }
-
-
 }
+
+
+class JSONTabletWriter(next: Output[String]) extends TextTabletWriter(JSONRecordFormatter, next)
+class CSVTabletWriterr(next: Output[String]) extends TextTabletWriter(CSVRecordFormatter, next)
+class TSVTabletWriter(next: Output[String]) extends TextTabletWriter(TSVRecordFormatter, next)
+
+
+
