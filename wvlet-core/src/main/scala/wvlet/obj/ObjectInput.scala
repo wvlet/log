@@ -1,6 +1,6 @@
 package wvlet.obj
 
-import wvlet.core.{Wvlet, WvletInput, WvletOutput, WvletSeq}
+import wvlet.core._
 import wvlet.core.tablet.{Column, Schema, Tablet, TabletWriter}
 import xerial.lens.{ObjectSchema, Primitive, TextType, TypeConverter}
 
@@ -38,15 +38,11 @@ object ObjectWriter {
 /**
   *
   */
-class ObjectWvlet[A: ClassTag] extends WvletInput[A] {
+class ObjectInput[A: ClassTag] extends Input[A] {
   val objSchema = ObjectSchema.of[A]
 
   // TODO Create data conversion operator using Tablet
   //val tablet = createSchemaOf[A](name)
-
-  override def |[Out](next:WvletOutput[Out]) : Wvlet[A, Out] = new Wvlet[A, Out] {
-    override def apply(in: Seq[A]): WvletSeq[Out] = ???
-  }
 
   def write(record: A, output: TabletWriter) {
     output.writeRecord {

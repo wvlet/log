@@ -2,9 +2,52 @@ package wvlet.core.rx
 
 import xerial.core.log.Logger
 import ReactiveStream._
+import wvlet.core.Output
+import wvlet.obj.ObjectInput
+
+/**
+  * Operation tree:
+  *
+  *   op = MapOp(SeqOp(seq), f:A=>B)
+  *
+  * Subscription:
+  *
+  *   op.subscribe(s1: new Subscriber(B => action)) : Subscription
+  *
+  *   MapOp: addSubscriber(s1: Subscriber[B])
+  *   SeqOp: addSubscriber(s2: new MapOpSubscriber[A](MapOp(f:A=>B))
+  *          s1.setPublisher(p:Publisher[A](seq, s2))
+  *
+  *
+  * Flow:
+  *    p --onNext(a)-> s2: A=>B --onNext(b)--> s1: B=> action
+  *     ^
+  *     |
+  *      ---------publisher.publish(n)----<-- s1.read(n)
+  *
+  * Stream Processing Chain
+  *
+  *   s1.read(n) // Read n data
+  *    - p.publish(n)
+  *
+  *
+  *   Publisher(Seq[A]) -> s2.onNext(A) -> s1.onNext(f(A):B)
+  *
+  *
+  *   
+  *
+  *
+  * Switching Record/Block-wise processing
+  *
+  *
+  */
+object Subscriber {
+
+}
+
 
 abstract class SubscriberBridge[In, Out](subscriber: Option[Subscriber[Out]]) extends Subscriber[In] with Flow with Logger {
-  private var producer: Option[Publisher[Out]] = None
+  private var publisher: Option[Publisher[Out]] = None
   private var running: Boolean = true
 
   def this() = this(None)
@@ -29,11 +72,11 @@ abstract class SubscriberBridge[In, Out](subscriber: Option[Subscriber[Out]]) ex
     if (n < 0) {
       throw new IllegalArgumentException(s"The number of request cannot be negative: ${ n }")
     }
-    producer.map(_.publish(n))
+    publisher.map(_.publish(n))
   }
 
   def setPublisher(p: Publisher[Out]) {
-    producer = Some(p)
+    publisher = Some(p)
     subscriber.map(s => p.setSubscriber(s))
   }
 
@@ -92,5 +135,20 @@ class FilterOpSubscriber[A](cond:A => Boolean, s:Subscriber[A]) extends Subscrib
     if(cond(elem)) {
       s.onNext(elem)
     }
+  }
+}
+
+
+class ConvertOpSubscriber[A, B](out:Output[B], s:Subscriber[B]) extends SubscriberBridge[A, B](s) {
+  val input = new ObjectInput[A]
+
+  override def onStart: Unit = {
+    super.onStart
+
+    out.tabletWriter
+  }
+
+  override def onNext(elem: A): Unit = {
+    input.write(elem, out.tabletWriter)
   }
 }

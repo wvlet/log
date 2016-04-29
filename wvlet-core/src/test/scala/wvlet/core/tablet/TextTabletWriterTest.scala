@@ -22,9 +22,9 @@ class TextTabletWriterTest extends WvletSpec {
       val seq = Seq(Person(1, "leo"), Person(2, "yui"))
 
 
-      val wvlet = create(seq) | json
+      val w  = create(seq) | json
 
-      wvlet(seq).mkString("\n")
+      w.mkString("\n")
 
     }
 
