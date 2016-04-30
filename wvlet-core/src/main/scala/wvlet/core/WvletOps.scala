@@ -1,10 +1,9 @@
 package wvlet.core
 
 import wvlet.core.WvletOps.{ConvertOp, FilterOp, MapOp, MkStringOp}
-import wvlet.core.rx.ReactiveStream.Subscriber
-import wvlet.core.rx.{ConvertOpSubscriber, SeqSubscriber, SubscriberBridge}
+import wvlet.core.rx.{Flow, FlowBase}
 
-trait WvletOp
+trait WvletOp[A]
 
 /**
   *
@@ -15,39 +14,35 @@ object WvletOps {
   case class MapOp[A, B](prev: WvSeq[A], f: A => B) extends WvSeq[B]
   case class FilterOp[A](prev: WvSeq[A], cond: A => Boolean) extends WvSeq[A]
   case class ConvertOp[A, R](prev: WvSeq[A], out: Output[R]) extends WvSeq[R]
-  case class MkStringOp[A](prev: WvSeq[A], separator:String) extends WvSingle[String]
+  case class MkStringOp[A](prev: WvSeq[A], separator: String) extends WvSingle[String]
 
-  def lift[A](op:WvSeq[A], s:Subscriber[A]) : Subscriber[A] = {
-    val s = op match {
-      case SeqOp(seq) =>
-        new SeqSubscriber(seq, s)
-      case ConvertOp(prev, out) =>
-        new ConvertOpSubscriber(out, s)
-    }
-    s.asInstanceOf[Subscriber[A]]
-  }
 
 }
 
-trait WvSingle[A] extends WvletOp {
+trait WvSingle[A] extends WvletOp[A] {
 
 }
 
-trait WvSeq[A] extends WvletOp {
+trait WvSeq[A] extends WvletOp[A] {
   self =>
   def map[B](f: A => B): WvSeq[B] = MapOp(self, f)
   def filter(cond: A => Boolean): WvSeq[A] = FilterOp(self, cond)
   def |[R](out: Output[R]): WvSeq[R] = ConvertOp(self, out)
-  def mkString(sepaarator:String) : WvSingle[String] = MkStringOp(self, sepaarator)
+  def mkString(sepaarator: String): WvSingle[String] = MkStringOp(self, sepaarator)
 
-  def subscribe(subscriber: Subscriber[A]) {
-    subscriber.onStart
-    subscriber.read(Long.MaxValue)
+  def stream(flow: Flow[A]) : rx.Stream = {
+    val s = rx.Stream.build(self, flow)
+    s.run(Long.MaxValue)
+    s
   }
-  def subscribe[U](handler: A => U) = {
-    val s = new SubscriberBridge[A, U]() {
+
+  def stream[U](handler: A => U) : rx.Stream = {
+    val flow = new Flow[A] {
       override def onNext(elem: A): Unit = handler(elem)
+      override def onStart: Unit = {}
+      override def onError(e: Throwable): Unit = {}
+      override def onComplete: Unit = {}
     }
-    subscribe(s)
+    stream(flow)
   }
 }
