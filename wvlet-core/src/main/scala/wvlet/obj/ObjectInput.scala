@@ -54,25 +54,13 @@ class ObjectInput(cls:Class[_]) extends Input with Logger {
           output.writeNull
         }
         else {
-          info(v)
           p.valueType match {
             case Primitive.Byte | Primitive.Short | Primitive.Int | Primitive.Long =>
-              TypeConverter.convertToPrimitive(v, Primitive.Long) match {
-                case Some(l) =>
-                  output.writeLong(l)
-                case None =>
-                  output.writeNull
-              }
+              output.writeLong(v.toString.toLong)
             case Primitive.Float | Primitive.Double =>
-              TypeConverter.convertToPrimitive(v, Primitive.Double) match {
-                case Some(d) => output.writeDouble(d)
-                case None => output.writeNull
-              }
+              output.writeDouble(v.toString.toDouble)
             case Primitive.Boolean =>
-              TypeConverter.convertToPrimitive(v, Primitive.Boolean) match {
-                case Some(b) => output.writeBoolean(b)
-                case None => output.writeNull
-              }
+              output.writeBoolean(v.toString.toBoolean)
             case Primitive.Char | TextType.String | TextType.File | TextType.Date =>
               output.writeString(v.toString)
             case other =>
