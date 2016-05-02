@@ -46,8 +46,8 @@ class FilterFlow[A](cond: A => Boolean, flow: Flow[A]) extends FlowBase[A, A](fl
   }
 }
 
-class ConvertFlow[A, B](out: Output[B], flow: Flow[B]) extends FlowBase[A, B](flow) {
-  val input = new ObjectInput[A]
+class ConvertFlow[A, B](cls:Class[A], out: Output[B], flow: Flow[B]) extends FlowBase[A, B](flow) {
+  val input = new ObjectInput[A](cls)
 
   override def onNext(elem: A): Unit = {
     input.write(elem, out.tabletWriter)

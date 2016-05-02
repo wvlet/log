@@ -5,7 +5,7 @@ package wvlet
   */
 package object core {
 
-  def withResource[Resource <: { def close }, U](resource:Resource)(body: Resource => U) : U = {
+  def withResource[Resource <: AutoCloseable, U](resource:Resource)(body: Resource => U) : U = {
     try {
       body(resource)
     }

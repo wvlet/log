@@ -1,5 +1,6 @@
 package wvlet.core.tablet
 
+import wvlet.core.rx.Flow
 import wvlet.core.time.TimeStamp
 import xerial.lens.{Primitive, TypeConverter}
 
@@ -8,19 +9,28 @@ import scala.util.parsing.json.JSONFormat
 object TextTabletWriter {
 
   trait RecordFormatter {
-    def sanitize(s:String) : String = s
-    def format(record:Seq[String]) : String
+    def sanitize(s: String): String = s
+    def format(record: Seq[String]): String
+
+
+    def quote(s:String) = {
+      val b = new StringBuilder(s.length + 2)
+      b.append("\"")
+      b.append(s)
+      b.append("\"")
+      b.result
+    }
   }
 
   object JSONRecordFormatter extends RecordFormatter {
-    override def sanitize(s: String): String = s"\"${JSONFormat.quoteString(s)}\""
+    override def sanitize(s: String): String = quote(JSONFormat.quoteString(s))
     override def format(record: Seq[String]): String = {
       s"[${record.mkString(", ")}]"
     }
   }
 
   object TSVRecordFormatter extends RecordFormatter {
-    override def sanitize(s:String) : String = {
+    override def sanitize(s: String): String = {
       s.map {
         case '\n' => "\\n"
         case '\r' => "\\r"
@@ -35,7 +45,7 @@ object TextTabletWriter {
   }
 
   object CSVRecordFormatter extends RecordFormatter {
-    override def sanitize(s:String) : String = {
+    override def sanitize(s: String): String = {
       var hasComma = false
       val sanitized = s.map {
         case '\n' => "\\n"
@@ -45,7 +55,7 @@ object TextTabletWriter {
           ','
         case c => c
       }.mkString
-      if(hasComma) s"\"${sanitized}\"" else sanitized
+      if (hasComma) quote(sanitized) else sanitized
     }
 
     override def format(record: Seq[String]): String = {
@@ -55,12 +65,12 @@ object TextTabletWriter {
 
 }
 
-import TextTabletWriter._
-import wvlet.core.rx.ReactiveStream._
+import wvlet.core.tablet.TextTabletWriter._
+
 /**
   *
   */
-class TextTabletWriter(formatter:RecordFormatter, next:Subscriber[String]) extends TabletWriter {
+class TextTabletWriter(formatter: RecordFormatter, next: Flow[String]) extends TabletWriter {
 
   protected val record = Seq.newBuilder[String]
 
@@ -119,10 +129,9 @@ class TextTabletWriter(formatter:RecordFormatter, next:Subscriber[String]) exten
   }
 }
 
-
-class JSONTabletWriter(next: Subscriber[String]) extends TextTabletWriter(JSONRecordFormatter, next)
-class CSVTabletWriter(next: Subscriber[String]) extends TextTabletWriter(CSVRecordFormatter, next)
-class TSVTabletWriter(next: Subscriber[String]) extends TextTabletWriter(TSVRecordFormatter, next)
+class JSONTabletWriter(next: Flow[String]) extends TextTabletWriter(JSONRecordFormatter, next)
+class CSVTabletWriter(next: Flow[String]) extends TextTabletWriter(CSVRecordFormatter, next)
+class TSVTabletWriter(next: Flow[String]) extends TextTabletWriter(TSVRecordFormatter, next)
 
 
 

@@ -27,7 +27,7 @@ class StreamBuilder {
 
   private val sources = Seq.newBuilder[Source[_]]
 
-  def newFlow[A](op: WvletOp[A], next: Flow[_]): Flow[_] = {
+  def newFlow[A](op: WvletOp[A], next: Flow[A]): Flow[_] = {
     op match {
       case SeqOp(seq) =>
         sources += new SeqSource(seq, next)
@@ -36,8 +36,8 @@ class StreamBuilder {
         newFlow(in, new MapFlow(f, next))
       case FilterOp(in, cond) =>
         newFlow(in, new FilterFlow(cond, next))
-      case ConvertOp(in, out) =>
-        newFlow(in, new ConvertFlow(out, next))
+//      case ConvertOp(in, out) =>
+//        newFlow(in, new ConvertFlow(out, next))
     }
   }
 

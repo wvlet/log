@@ -38,8 +38,8 @@ object ObjectWriter {
 /**
   *
   */
-class ObjectInput[A: ClassTag] extends Input[A] {
-  val objSchema = ObjectSchema.of[A]
+class ObjectInput[A](cls:Class[A]) extends Input[A] {
+  val objSchema = ObjectSchema(cls)
 
   // TODO Create data conversion operator using Tablet
   //val tablet = createSchemaOf[A](name)

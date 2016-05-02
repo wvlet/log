@@ -12,7 +12,7 @@ trait TabletWriter {
   def writeDouble(v: Double)
   def writeBoolean(v: Boolean)
   def writeString(v: String)
-  def writeBinary(v: Array[Byte]) = writeBinary(v, 0, v.length)
+  def writeBinary(v: Array[Byte]) : Unit = writeBinary(v, 0, v.length)
   def writeBinary(v: Array[Byte], offset:Int, length:Int)
   def writeTimestamp(v : TimeStamp)
   def writeJson(v: String)
