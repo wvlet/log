@@ -1,6 +1,15 @@
 package wvlet.core.rx
 
 
+/**
+  * Source provides a given number of object of type A upon
+  * a request from Stream
+  * @tparam A
+  */
+trait Source[A] {
+  def run(n: Long)
+}
+
 class SeqSource[A](input: Seq[A], flow: Flow[A]) extends Source[A] {
   private var isStarted = false
   private val cursor    = input.iterator

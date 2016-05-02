@@ -5,6 +5,19 @@ import wvlet.core.WvletOps.{MapOp, SeqOp}
 import wvlet.obj.ObjectInput
 
 
+/**
+  * Flow is an interface to handle streaming objects
+  * @tparam A
+  */
+trait Flow[A] {
+  def onStart: Unit
+  def onComplete: Unit
+
+  def onError(e: Throwable): Unit
+  def onNext(x: A): Unit
+}
+
+
 abstract class FlowBase[In, Out](flow: Flow[Out]) extends Flow[In] {
   def onStart {
     flow.onStart
@@ -16,20 +29,6 @@ abstract class FlowBase[In, Out](flow: Flow[Out]) extends Flow[In] {
 
   def onError(e: Throwable) {
     flow.onError(e)
-  }
-}
-
-class SeqFlow[A](seq: Seq[A], flow: Flow[A]) extends FlowBase[Unit, A](flow) {
-
-  override def onStart: Unit = {
-    super.onStart
-    if (seq.isEmpty) {
-      onComplete
-    }
-  }
-
-  override def onNext(x: Unit): Unit = {
-    // Do nothing since this operation has no input
   }
 }
 
