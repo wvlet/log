@@ -120,7 +120,7 @@ class RequestDispatcher extends Filter with Logger {
     val mappings = for{
       resource <- rl.par
       componentName <- componentName(resource.logicalPath)
-      cls <- findClass(s"${packagePath}.${componentName}") if classOf[WebAction].isAssignableFrom(cls)
+      cls <- findClass(s"${packagePath}.${componentName}") // TODO: if classOf[WebAction].isAssignableFrom(cls)
     } yield {
       val appName = {
         val name = cls.getSimpleName.toLowerCase

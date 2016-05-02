@@ -12,21 +12,19 @@ object RESTLens {
       new Builder(serviceClassList :+ serviceClass)
     }
 
-    def newService : Service = {
-
-      for(service <- serviceClassList) yield {
-
-
-
-      }
-
-
-
-    }
+//    def newService : Service = {
+//
+//      for(service <- serviceClassList) yield {
+//
+//
+//
+//      }
+//
+//
+//      // TODO
+//      null
+//    }
   }
-
-
-
 
 
 }
