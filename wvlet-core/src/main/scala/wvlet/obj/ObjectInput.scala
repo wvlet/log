@@ -1,7 +1,9 @@
 package wvlet.obj
 
 import wvlet.core._
+import wvlet.core.rx.Flow
 import wvlet.core.tablet.{Column, Schema, Tablet, TabletWriter}
+import xerial.core.log.Logger
 import xerial.lens.{ObjectSchema, Primitive, TextType, TypeConverter}
 
 import scala.reflect.ClassTag
@@ -38,25 +40,28 @@ object ObjectWriter {
 /**
   *
   */
-class ObjectInput[A](cls:Class[A]) extends Input[A] {
+class ObjectInput(cls:Class[_]) extends Input with Logger {
   val objSchema = ObjectSchema(cls)
 
   // TODO Create data conversion operator using Tablet
   //val tablet = createSchemaOf[A](name)
 
-  def write(record: A, output: TabletWriter) {
-    output.writeRecord {
+  def write(record: Any, output: TabletWriter, flow:Flow[String]) {
+    output.writeRecord(flow) {
       for (p <- objSchema.parameters) {
         val v = p.get(record)
         if (v == null) {
           output.writeNull
         }
         else {
+          info(v)
           p.valueType match {
             case Primitive.Byte | Primitive.Short | Primitive.Int | Primitive.Long =>
               TypeConverter.convertToPrimitive(v, Primitive.Long) match {
-                case Some(l) => output.writeLong(l)
-                case None => output.writeNull
+                case Some(l) =>
+                  output.writeLong(l)
+                case None =>
+                  output.writeNull
               }
             case Primitive.Float | Primitive.Double =>
               TypeConverter.convertToPrimitive(v, Primitive.Double) match {

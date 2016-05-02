@@ -1,11 +1,15 @@
 package wvlet.core.tablet
 
+import wvlet.core.rx.Flow
 import wvlet.core.time.TimeStamp
 
 
 
 trait TabletWriter {
-  def writeRecord(body: => Unit)
+  def clearRecord
+  def getRecord : Seq[String]
+
+  def writeRecord(flow:Flow[String])(body: => Unit)
 
   def writeNull
   def writeLong(v: Long)

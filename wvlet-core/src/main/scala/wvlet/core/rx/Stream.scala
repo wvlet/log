@@ -36,8 +36,8 @@ class StreamBuilder {
         newFlow(in, new MapFlow(f, next))
       case FilterOp(in, cond) =>
         newFlow(in, new FilterFlow(cond, next))
-//      case ConvertOp(in, out) =>
-//        newFlow(in, new ConvertFlow(out, next))
+      case ConvertOp(in, out) =>
+        newFlow(in, new ConvertFlow(out, next.asInstanceOf[Flow[String]]))
     }
   }
 

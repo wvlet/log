@@ -67,19 +67,29 @@ object TextTabletWriter {
 
 import wvlet.core.tablet.TextTabletWriter._
 
+trait TabletRecordWriter {
+  self : TabletWriter =>
+
+  def formatter: RecordFormatter
+
+  def writeRecord(next:Flow[String])(body: => Unit) {
+    self.clearRecord
+    body
+    val recordText = formatter.format(getRecord)
+    next.onNext(recordText)
+  }
+}
+
 /**
   *
   */
-class TextTabletWriter(formatter: RecordFormatter, next: Flow[String]) extends TabletWriter {
+class TextTabletWriter(val formatter: RecordFormatter)
+  extends TabletWriter with TabletRecordWriter {
 
   protected val record = Seq.newBuilder[String]
 
-  def writeRecord(body: => Unit) {
-    record.clear()
-    body
-    val recordText = formatter.format(record.result())
-    next.onNext(recordText)
-  }
+  def clearRecord = record.clear()
+  def getRecord = record.result()
 
   def writeNull = {
     record += "null"
@@ -129,9 +139,9 @@ class TextTabletWriter(formatter: RecordFormatter, next: Flow[String]) extends T
   }
 }
 
-class JSONTabletWriter(next: Flow[String]) extends TextTabletWriter(JSONRecordFormatter, next)
-class CSVTabletWriter(next: Flow[String]) extends TextTabletWriter(CSVRecordFormatter, next)
-class TSVTabletWriter(next: Flow[String]) extends TextTabletWriter(TSVRecordFormatter, next)
+object JSONTabletWriter extends TextTabletWriter(JSONRecordFormatter)
+object CSVTabletWriter extends TextTabletWriter(CSVRecordFormatter)
+object TSVTabletWriter extends TextTabletWriter(TSVRecordFormatter)
 
 
 
