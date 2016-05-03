@@ -1,3 +1,4 @@
+
 val buildSettings = Seq[Setting[_]](
   scalaVersion := "2.11.8",
   organization := "org.wvlet",
@@ -44,6 +45,17 @@ lazy val wvlet =
     publishLocal := {},
     packExclude := Seq("wvlet")
   ).aggregate(wvletCore, wvletLens, wvletJdbc, wvletDataframe, wvletRest, wvletTest, wvletCui)
+
+lazy val wvletLogger =
+  Project(id = "wvlet-log", base = file("wvlet-log")).settings(
+    buildSettings,
+    description := "Handy logging library for slf4j",
+    libraryDependencies ++= Seq(
+      "org.slf4j"      %  "slf4j-api"       % "1.7.21",
+      "ch.qos.logback" % "logback-classic" % "1.1.7",
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value
+    )
+  ).dependsOn(wvletTest % "test->compile")
 
 lazy val wvletCore =
   Project(id = "wvlet-core", base = file("wvlet-core")).settings(

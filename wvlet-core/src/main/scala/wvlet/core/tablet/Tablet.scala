@@ -43,7 +43,7 @@ case class Schema(name: String, column: Seq[Column]) {
 }
 
 
-// TODO optimize data structure
+// TODO optimize the data structure
 case class Record(buffer:Array[Byte])
 case class Tablet(record:Seq[Record])
 
