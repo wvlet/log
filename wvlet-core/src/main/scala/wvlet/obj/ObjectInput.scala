@@ -5,7 +5,7 @@ import wvlet.core._
 import wvlet.core.rx.Flow
 import wvlet.core.tablet._
 import xerial.core.log.Logger
-import xerial.lens.{ObjectSchema, Primitive, TextType, TypeConverter}
+import xerial.lens._
 
 import scala.reflect.ClassTag
 
@@ -57,6 +57,8 @@ class ObjectInput() extends Input with Logger {
       val objSchema = ObjectSchema(record.getClass)
       //val arrSize = Math.max(objSchema.parameters.length, schema.size)
       // TODO add parameter values not in the schema
+      info(objSchema)
+
       packer.packArrayHeader(objSchema.parameters.length)
       for (p <- objSchema.parameters) {
         val v = p.get(record)
@@ -73,6 +75,13 @@ class ObjectInput() extends Input with Logger {
               packer.packBoolean(v.toString.toBoolean)
             case Primitive.Char | TextType.String | TextType.File | TextType.Date =>
               packer.packString(v.toString)
+            case arr if TypeUtil.isArray(v.getClass) =>
+              // TODO FIXME
+              val seq = arr.asInstanceOf[Seq[_]]
+              packer.packArrayHeader(seq.length)
+              for(s <- seq) {
+                packer.packString("test")
+              }
             case other =>
               // TODO support Array, Map, etc.
               packer.packString(other.toString())

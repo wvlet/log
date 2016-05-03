@@ -3,8 +3,9 @@ package wvlet.core.tablet
 import wvlet.test.WvletSpec
 
 object TextTabletWriterTest {
-  case class Person(id:Int, name:String)
+  case class Person(id:Int, name:String, phone:Seq[String])
 }
+
 
 import TextTabletWriterTest._
 /**
@@ -17,7 +18,7 @@ class TextTabletWriterTest extends WvletSpec {
 
   "TextTabletWriter" should {
 
-    val seq = Seq(Person(1, "leo"), Person(2, "yui"))
+    val seq = Seq(Person(1, "leo", Seq("xxx-xxxx")), Person(2, "yui", Seq("yyy-yyyy", "zzz-zzzz")))
 
     "output object in JSON array format" in {
       val w  = create(seq) | toJSON[Person]
