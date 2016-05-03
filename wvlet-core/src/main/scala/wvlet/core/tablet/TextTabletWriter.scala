@@ -72,7 +72,7 @@ import wvlet.core.tablet.TextTabletWriter._
   */
 class TabletPrinter(val formatter: RecordFormatter) {
 
-  def read(unpacker: MessageUnpacker): String = {
+  def read(unpacker: MessageUnpacker, depth:Int): String = {
     if(!unpacker.hasNext) {
       ""
     }
@@ -101,11 +101,16 @@ class TabletPrinter(val formatter: RecordFormatter) {
           val r = Seq.newBuilder[String]
           var i = 0
           while (i < arrSize) {
-            val col = read(unpacker)
+            val col = read(unpacker, depth + 1)
             r += col
             i += 1
           }
-          formatter.sanitizeEmbedded(formatter.format(r.result()))
+          if(depth < 1) {
+            formatter.format(r.result())
+          }
+          else {
+            formatter.sanitizeEmbedded(formatter.format(r.result()))
+          }
         case ValueType.MAP =>
           formatter.sanitizeEmbedded(unpacker.unpackValue().toJson)
         case ValueType.EXTENSION =>
@@ -117,7 +122,7 @@ class TabletPrinter(val formatter: RecordFormatter) {
   def write(record: Record): String = {
     val unpacker = MessagePack.newDefaultUnpacker(record.buffer)
     val s = Seq.newBuilder[String]
-    read(unpacker)
+    read(unpacker, 0)
   }
 }
 
