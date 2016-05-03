@@ -1,8 +1,9 @@
 package wvlet.obj
 
+import org.msgpack.core.{MessagePack, MessagePacker}
 import wvlet.core._
 import wvlet.core.rx.Flow
-import wvlet.core.tablet.{Column, Schema, Tablet, TabletWriter}
+import wvlet.core.tablet._
 import xerial.core.log.Logger
 import xerial.lens.{ObjectSchema, Primitive, TextType, TypeConverter}
 
@@ -40,36 +41,46 @@ object ObjectWriter {
 /**
   *
   */
-class ObjectInput(cls:Class[_]) extends Input with Logger {
-  val objSchema = ObjectSchema(cls)
+class ObjectInput() extends Input with Logger {
 
   // TODO Create data conversion operator using Tablet
   //val tablet = createSchemaOf[A](name)
 
-  def write(record: Any, output: TabletWriter, flow:Flow[String]) {
-    output.writeRecord(flow) {
+  def write(record: Any) : Record = {
+    // TODO optimize buffer allocation
+    val packer = MessagePack.newDefaultBufferPacker()
+
+    if(record == null) {
+      packer.packNil()
+    }
+    else {
+      val objSchema = ObjectSchema(record.getClass)
+      //val arrSize = Math.max(objSchema.parameters.length, schema.size)
+      // TODO add parameter values not in the schema
+      packer.packArrayHeader(objSchema.parameters.length)
       for (p <- objSchema.parameters) {
         val v = p.get(record)
         if (v == null) {
-          output.writeNull
+          packer.packNil()
         }
         else {
           p.valueType match {
             case Primitive.Byte | Primitive.Short | Primitive.Int | Primitive.Long =>
-              output.writeLong(v.toString.toLong)
+              packer.packLong(v.toString.toLong)
             case Primitive.Float | Primitive.Double =>
-              output.writeDouble(v.toString.toDouble)
+              packer.packDouble(v.toString.toDouble)
             case Primitive.Boolean =>
-              output.writeBoolean(v.toString.toBoolean)
+              packer.packBoolean(v.toString.toBoolean)
             case Primitive.Char | TextType.String | TextType.File | TextType.Date =>
-              output.writeString(v.toString)
+              packer.packString(v.toString)
             case other =>
               // TODO support Array, Map, etc.
-              output.writeString(other.toString())
+              packer.packString(other.toString())
           }
         }
       }
     }
+    Record(packer.toByteArray)
   }
 }
 

@@ -1,5 +1,7 @@
 package wvlet.core.tablet
 
+import org.msgpack.core.buffer.MessageBuffer
+
 object Tablet {
   sealed trait Type {
     //def isPrimitive : Boolean
@@ -20,10 +22,10 @@ object Tablet {
 
 case class Column(name: String, dataType: Tablet.Type)
 
-trait Tablet
-
 case class Schema(name: String, column: Seq[Column]) {
   private lazy val columnIdx : Map[Column, Int] = column.zipWithIndex.toMap[Column, Int]
+
+  def size: Int = column.size
 
   /**
     * @param index 0-origin index
@@ -33,8 +35,15 @@ case class Schema(name: String, column: Seq[Column]) {
 
   /**
     * Return the column index
+ *
     * @param column
     * @return
     */
   def columnIndex(column:Column) = columnIdx(column)
 }
+
+
+// TODO optimize data structure
+case class Record(buffer:Array[Byte])
+case class Tablet(record:Seq[Record])
+

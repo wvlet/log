@@ -2,11 +2,14 @@ package wvlet.core.tablet
 
 import wvlet.core.time.TimeStamp
 
+object TabletReader {
+  type Line = String
+}
+
 /**
   *
   */
 trait TabletReader {
-  def writeRecord(body: => Unit)
 
   def isNull : Boolean
   def readNull : Unit

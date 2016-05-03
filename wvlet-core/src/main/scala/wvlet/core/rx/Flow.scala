@@ -2,6 +2,7 @@ package wvlet.core.rx
 
 import wvlet.core.Output
 import wvlet.core.WvletOps.{MapOp, SeqOp}
+import wvlet.core.tablet.{Record, TabletPrinter}
 import wvlet.obj.ObjectInput
 
 
@@ -46,10 +47,19 @@ class FilterFlow[A](cond: A => Boolean, flow: Flow[A]) extends FlowBase[A, A](fl
   }
 }
 
-class ConvertFlow[A, B](out: Output[B], flow: Flow[String]) extends FlowBase[A, String](flow) {
-  val input = new ObjectInput(out.inputCls)
+class ConvertFlow[A, B](out: Output[B], flow: Flow[Record]) extends FlowBase[A, Record](flow) {
+  val input = new ObjectInput()
 
   override def onNext(elem: A): Unit = {
-    input.write(elem, out.tabletWriter, flow)
+    val record = input.write(elem)
+    flow.onNext(record)
+  }
+}
+
+class RecordPrintFlow(printer:TabletPrinter, flow:Flow[String]) extends FlowBase[Record, String](flow) {
+
+  override def onNext(x: Record): Unit = {
+    val s = printer.write(x)
+    flow.onNext(s)
   }
 }

@@ -1,6 +1,7 @@
 package wvlet.core.rx
 
 import wvlet.core.WvletOps.{ConvertOp, FilterOp, MapOp, SeqOp}
+import wvlet.core.tablet.Record
 import wvlet.core.{WvSeq, WvletOp}
 
 /**
@@ -37,7 +38,7 @@ class StreamBuilder {
       case FilterOp(in, cond) =>
         newFlow(in, new FilterFlow(cond, next))
       case ConvertOp(in, out) =>
-        newFlow(in, new ConvertFlow(out, next.asInstanceOf[Flow[String]]))
+        newFlow(in, new ConvertFlow(out, new RecordPrintFlow(out.tabletPrinter, next.asInstanceOf[Flow[String]])))
     }
   }
 

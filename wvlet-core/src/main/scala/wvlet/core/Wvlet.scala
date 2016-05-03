@@ -1,8 +1,7 @@
 package wvlet.core
 
-import wvlet.core.WvletOps.{ConvertOp, SeqOp}
-import wvlet.core.rx.Flow
-import wvlet.core.tablet.{JSONTabletWriter, Tablet, TabletReader, TabletWriter}
+import wvlet.core.WvletOps.SeqOp
+import wvlet.core.tablet._
 
 import scala.reflect.ClassTag
 
@@ -16,11 +15,11 @@ trait Router {
 }
 
 /**
-  * A -> Tablet
+  * A -> TabletRecord
   *
   */
 trait Input {
-  def write(record: Any, output: TabletWriter, flow:Flow[String])
+  def write(record: Any): Record
 }
 
 /**
@@ -29,8 +28,8 @@ trait Input {
   * @tparam A
   */
 trait Output[A] {
-  def inputCls : Class[_]
-  def tabletWriter : TabletWriter
+  //def inputCls: Class[_]
+  def tabletPrinter : TabletPrinter
 }
 
 /**
@@ -46,9 +45,11 @@ object Wvlet {
 
   def create[A: ClassTag](seq: Seq[A]) = SeqOp(seq)
 
-  def json[A](implicit ev:ClassTag[A]) = Converter(ev.runtimeClass, JSONTabletWriter)
-  //def tsv: Output[String] = null
+  def toJSON[A](implicit ev: ClassTag[A]) = TabletOutput(ev.runtimeClass, JSONTabletPrinter)
+  def toTSV[A](implicit ev: ClassTag[A]) = TabletOutput(ev.runtimeClass, TSVTabletPrinter)
+  def toCSV[A](implicit ev: ClassTag[A]) = TabletOutput(ev.runtimeClass, CSVTabletPrinter)
 
+  def fromJSON[A](implicit ev: ClassTag[A]) {}
 }
 
-case class Converter[A](inputCls:Class[A], tabletWriter: TabletWriter) extends Output[String]
+case class TabletOutput[A](inputCls: Class[A], tabletPrinter: TabletPrinter) extends Output[String]

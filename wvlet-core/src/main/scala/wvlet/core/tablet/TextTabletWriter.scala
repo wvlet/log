@@ -1,8 +1,7 @@
 package wvlet.core.tablet
 
-import wvlet.core.rx.Flow
-import wvlet.core.time.TimeStamp
-import xerial.lens.{Primitive, TypeConverter}
+import org.msgpack.core.{MessagePack, MessageUnpacker}
+import org.msgpack.value.ValueType
 
 import scala.util.parsing.json.JSONFormat
 
@@ -10,10 +9,10 @@ object TextTabletWriter {
 
   trait RecordFormatter {
     def sanitize(s: String): String = s
+    def sanitizeEmbedded(s: String): String = sanitize(s)
     def format(record: Seq[String]): String
 
-
-    def quote(s:String) = {
+    def quote(s: String) = {
       val b = new StringBuilder(s.length + 2)
       b.append("\"")
       b.append(s)
@@ -24,6 +23,7 @@ object TextTabletWriter {
 
   object JSONRecordFormatter extends RecordFormatter {
     override def sanitize(s: String): String = quote(JSONFormat.quoteString(s))
+    override def sanitizeEmbedded(s: String): String = s
     override def format(record: Seq[String]): String = {
       s"[${record.mkString(", ")}]"
     }
@@ -67,81 +67,63 @@ object TextTabletWriter {
 
 import wvlet.core.tablet.TextTabletWriter._
 
-trait TabletRecordWriter {
-  self : TabletWriter =>
-
-  def formatter: RecordFormatter
-
-  def writeRecord(next:Flow[String])(body: => Unit) {
-    self.clearRecord
-    body
-    val recordText = formatter.format(getRecord)
-    next.onNext(recordText)
-  }
-}
-
 /**
   *
   */
-class TextTabletWriter(val formatter: RecordFormatter)
-  extends TabletWriter with TabletRecordWriter {
+class TabletPrinter(val formatter: RecordFormatter) {
 
-  protected val record = Seq.newBuilder[String]
-
-  def clearRecord = record.clear()
-  def getRecord = record.result()
-
-  def writeNull = {
-    record += "null"
-  }
-  def writeLong(v: Long) = {
-    record += v.toString
-  }
-  def writeDouble(v: Double) = {
-    record += v.toString
-  }
-  def writeBoolean(v: Boolean) = {
-    record += (if (v) "true" else "false")
-  }
-  def writeString(v: String) = {
-    record += formatter.sanitize(v)
-  }
-  def writeBinary(v: Array[Byte], offset: Int, length: Int) {
-    // TODO
-  }
-  def writeTimestamp(v: TimeStamp) {
-    // TODO
-  }
-  def writeJson(v: String) {
-    writeString(v)
-  }
-  def writeArray[A](v: Seq[A], elemType: Tablet.Type) {
-    // TODO
-    val arr = Seq.newBuilder[String]
-    var i = 0
-    for ((x, i) <- v.zipWithIndex) {
-      elemType match {
-        case Tablet.INTEGER =>
-          TypeConverter.convertToPrimitive(x, Primitive.Long).map(writeLong(_))
-        case Tablet.INTEGER =>
-          TypeConverter.convertToPrimitive(x, Primitive.Long).map(writeLong(_))
-        case Tablet.INTEGER =>
-          TypeConverter.convertToPrimitive(x, Primitive.Long).map(writeLong(_))
-        case Tablet.INTEGER =>
-          TypeConverter.convertToPrimitive(x, Primitive.Long).map(writeLong(_))
-
+  def read(unpacker: MessageUnpacker): String = {
+    if(!unpacker.hasNext) {
+      ""
+    }
+    else {
+      val f = unpacker.getNextFormat
+      f.getValueType match {
+        case ValueType.NIL =>
+          unpacker.unpackNil
+          // TODO Switch output mode: empty string or "null"
+          "null"
+        case ValueType.BOOLEAN =>
+          val b = unpacker.unpackBoolean()
+          if (b) "true" else "false"
+        case ValueType.INTEGER =>
+          unpacker.unpackLong.toString
+        case ValueType.FLOAT =>
+          unpacker.unpackDouble.toString
+        case ValueType.STRING =>
+          val s = unpacker.unpackString
+          formatter.sanitize(s)
+        case ValueType.BINARY =>
+          // TODO
+          "null"
+        case ValueType.ARRAY =>
+          val arrSize = unpacker.unpackArrayHeader()
+          val r = Seq.newBuilder[String]
+          var i = 0
+          while (i < arrSize) {
+            val col = read(unpacker)
+            r += col
+            i += 1
+          }
+          formatter.sanitizeEmbedded(formatter.format(r.result()))
+        case ValueType.MAP =>
+          formatter.sanitizeEmbedded(unpacker.unpackValue().toJson)
+        case ValueType.EXTENSION =>
+          "null"
       }
     }
-    record += s"[${arr.result.mkString(",")}]"
   }
-  def writeMap[K, V](v: Map[K, V], keyType: Tablet.Type, valueType: Tablet.Type) {
-    // TODO
+
+  def write(record: Record): String = {
+    val unpacker = MessagePack.newDefaultUnpacker(record.buffer)
+    val s = Seq.newBuilder[String]
+    read(unpacker)
   }
 }
 
-object JSONTabletWriter extends TextTabletWriter(JSONRecordFormatter)
-object CSVTabletWriter extends TextTabletWriter(CSVRecordFormatter)
-object TSVTabletWriter extends TextTabletWriter(TSVRecordFormatter)
+object JSONTabletPrinter extends TabletPrinter(JSONRecordFormatter)
+object CSVTabletPrinter extends TabletPrinter(CSVRecordFormatter)
+object TSVTabletPrinter extends TabletPrinter(TSVRecordFormatter)
 
 
 
