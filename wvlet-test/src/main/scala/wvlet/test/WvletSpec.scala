@@ -1,7 +1,7 @@
 package wvlet.test
 
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, ShouldMatchers, WordSpec}
-import xerial.core.log.Logger
+import wvlet.log.Logger
 
 /**
   *
