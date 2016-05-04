@@ -4,7 +4,7 @@ import org.msgpack.core.{MessagePack, MessagePacker}
 import wvlet.core._
 import wvlet.core.rx.Flow
 import wvlet.core.tablet._
-import xerial.core.log.Logger
+import wvlet.log.Logger
 import xerial.lens._
 
 import scala.reflect.ClassTag
