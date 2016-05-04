@@ -4,7 +4,7 @@ import org.msgpack.core.{MessagePack, MessagePacker}
 import wvlet.core._
 import wvlet.core.rx.Flow
 import wvlet.core.tablet._
-import wvlet.log.Logger
+import wvlet.log.{LogSupport, Logger}
 import xerial.lens._
 
 import scala.reflect.ClassTag
@@ -41,7 +41,7 @@ object ObjectWriter {
 /**
   *
   */
-class ObjectInput() extends Input with Logger {
+class ObjectInput() extends Input with LogSupport {
 
   // TODO Create data conversion operator using Tablet
   //val tablet = createSchemaOf[A](name)
