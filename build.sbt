@@ -1,3 +1,4 @@
+import ReleaseTransformations._
 
 val buildSettings = Seq[Setting[_]](
   scalaVersion := "2.11.8",
@@ -31,7 +32,23 @@ val buildSettings = Seq[Setting[_]](
         <url>http://xerial.org/leo</url>
       </developer>
     </developers>
-  }
+  },
+  // Release settings
+  releaseTagName := { (version in ThisBuild).value },
+  releaseProcess := Seq[ReleaseStep](
+    checkSnapshotDependencies,
+    inquireVersions,
+    runClean,
+    runTest,
+    setReleaseVersion,
+    commitReleaseVersion,
+    tagRelease,
+    ReleaseStep(action = Command.process("publishSigned", _)),
+    setNextVersion,
+    commitNextVersion,
+    ReleaseStep(action = Command.process("sonatypeReleaseAll", _)),
+    pushChanges
+  )
 )
 
 lazy val wvlet =
