@@ -10,7 +10,7 @@ val buildSettings = Seq[Setting[_]](
   incOptions := incOptions.value.withNameHashing(true),
   logBuffered in Test := false,
   updateOptions := updateOptions.value.withCachedResolution(true),
-  sonatypeProfileName := "org.xerial",
+  sonatypeProfileName := "org.wvlet",
   pomExtra := {
   <url>https://github.com/xerial/wvlet</url>
     <licenses>
@@ -51,8 +51,6 @@ lazy val wvletLogger =
     buildSettings,
     description := "Handy logging library for slf4j",
     libraryDependencies ++= Seq(
-      "org.slf4j"      %  "slf4j-api"       % "1.7.21",
-      "ch.qos.logback" % "logback-classic" % "1.1.7",
       "org.scala-lang" % "scala-reflect" % scalaVersion.value
     )
   ).dependsOn(wvletTest % "test->compile")
