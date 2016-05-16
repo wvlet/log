@@ -66,12 +66,23 @@ lazy val wvlet =
 lazy val wvletLog =
   Project(id = "wvlet-log", base = file("wvlet-log")).settings(
     buildSettings,
-    description := "Handy logging library for slf4j",
+    description := "Handy logging wrapper for java.util.logging",
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+      "ch.qos.logback" % "logback-core" % "1.1.7",
       "org.scalatest" %% "scalatest" % "2.2.+" % "test"
     )
   )
+
+lazy val wvletConfig =
+  Project(id = "wvlet-config", base = file("wvlet-config")).settings(
+    buildSettings,
+    description := "Configuration module",
+    libraryDependencies ++= Seq(
+      "org.yaml" % "snakeyaml" % "1.14"
+    )
+  ).dependsOn(wvletCore, wvletTest % "test->compile")
+
 
 lazy val wvletCore =
   Project(id = "wvlet-core", base = file("wvlet-core")).settings(
