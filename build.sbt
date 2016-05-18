@@ -79,7 +79,8 @@ lazy val wvletConfig =
     buildSettings,
     description := "Configuration module",
     libraryDependencies ++= Seq(
-      "org.yaml" % "snakeyaml" % "1.14"
+      "org.yaml" % "snakeyaml" % "1.14",
+      "org.xerial" %% "xerial-lens" % "3.5.0"
     )
   ).dependsOn(wvletCore, wvletTest % "test->compile")
 
