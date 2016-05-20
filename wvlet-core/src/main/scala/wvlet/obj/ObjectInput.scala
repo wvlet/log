@@ -1,11 +1,9 @@
 package wvlet.obj
 
-import org.msgpack.core.{MessagePack, MessagePacker}
+import org.msgpack.core.MessagePack
 import wvlet.core._
-import wvlet.core.rx.Flow
 import wvlet.core.tablet._
-import wvlet.log.{LogSupport, Logger}
-import xerial.lens._
+import wvlet.log.LogSupport
 
 import scala.reflect.ClassTag
 
@@ -46,11 +44,11 @@ class ObjectInput() extends Input with LogSupport {
   // TODO Create data conversion operator using Tablet
   //val tablet = createSchemaOf[A](name)
 
-  def write(record: Any) : Record = {
+  def write(record: Any): Record = {
     // TODO optimize buffer allocation
     val packer = MessagePack.newDefaultBufferPacker()
 
-    if(record == null) {
+    if (record == null) {
       packer.packNil()
     }
     else {
@@ -79,7 +77,7 @@ class ObjectInput() extends Input with LogSupport {
               // TODO FIXME
               val seq = arr.asInstanceOf[Seq[_]]
               packer.packArrayHeader(seq.length)
-              for(s <- seq) {
+              for (s <- seq) {
                 packer.packString("test")
               }
             case other =>

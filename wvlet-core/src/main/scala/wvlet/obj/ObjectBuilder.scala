@@ -1,11 +1,9 @@
 package wvlet.obj
 
-import collection.mutable.ArrayBuffer
-import xerial.core.log.Logger
-import xerial.lens.Path
+import wvlet.log.LogSupport
 
-import collection.mutable
-
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 //--------------------------------------
 //
@@ -18,7 +16,7 @@ import collection.mutable
   *
   *
   */
-object ObjectBuilder extends Logger {
+object ObjectBuilder extends LogSupport {
 
   def apply[A](cl: Class[A]): ObjectBuilder[A] = {
     //if (!TypeUtil.canInstantiate(cl))
@@ -27,23 +25,23 @@ object ObjectBuilder extends Logger {
   }
 
   sealed trait BuilderElement
-  case class Holder[A](holder:ObjectBuilder[A]) extends BuilderElement
-  case class Value(value:Any) extends BuilderElement
-  case class ArrayHolder(holder:mutable.ArrayBuffer[Any]) extends BuilderElement
-
+  case class Holder[A](holder: ObjectBuilder[A]) extends BuilderElement
+  case class Value(value: Any) extends BuilderElement
+  case class ArrayHolder(holder: mutable.ArrayBuffer[Any]) extends BuilderElement
 
 }
 
 trait GenericBuilder {
 
-  def set(path:String, value:Any): Unit = set(Path(path), value)
-  def set(path:Path, value:Any): Unit
+  def set(path: String, value: Any): Unit = set(Path(path), value)
+  def set(path: Path, value: Any): Unit
 
-  def get(name:String) : Option[Any]
+  def get(name: String): Option[Any]
 }
 
 /**
   * Generic object builder
+  *
   * @author leo
   */
 trait ObjectBuilder[A] extends GenericBuilder {
@@ -52,22 +50,21 @@ trait ObjectBuilder[A] extends GenericBuilder {
 
 }
 
-trait StandardBuilder[ParamType <: Parameter] extends GenericBuilder with Logger {
+trait StandardBuilder[ParamType <: Parameter] extends GenericBuilder with LogSupport {
 
   import ObjectBuilder._
   import TypeUtil._
 
-
   protected val holder = collection.mutable.Map.empty[String, BuilderElement]
 
-  protected def findParameter(name:String) : Option[ParamType]
-  protected def getParameterTypeOf(name:String) = findParameter(name).get.valueType
+  protected def findParameter(name: String): Option[ParamType]
+  protected def getParameterTypeOf(name: String) = findParameter(name).get.valueType
 
-  protected def defaultValues : collection.immutable.Map[String, Any]
+  protected def defaultValues: collection.immutable.Map[String, Any]
 
   // set the default values of the object
-  for((name, value) <- defaultValues) {
-    val v : BuilderElement = findParameter(name).map {
+  for ((name, value) <- defaultValues) {
+    val v: BuilderElement = findParameter(name).map {
       case p if TypeUtil.canBuildFromBuffer(p.rawType) => Value(value)
       case p if canBuildFromStringValue(p.valueType) => Value(value)
       case p => {
@@ -75,7 +72,7 @@ trait StandardBuilder[ParamType <: Parameter] extends GenericBuilder with Logger
         // TODO handling of recursive objects
         val b = ObjectBuilder(p.rawType)
         val schema = ObjectSchema(p.rawType)
-        for(p <- schema.constructor.params) {
+        for (p <- schema.constructor.params) {
           b.set(p.name, p.get(value))
         }
         Holder(b)
@@ -85,26 +82,28 @@ trait StandardBuilder[ParamType <: Parameter] extends GenericBuilder with Logger
     holder += name -> v
   }
 
-  private def canBuildFromStringValue(t:ObjectType) : Boolean = {
+  private def canBuildFromStringValue(t: ObjectType): Boolean = {
     import scala.language.existentials
 
-    if(TextType.isTextType(t.rawType) || canBuildFromString(t.rawType))
+    if (TextType.isTextType(t.rawType) || canBuildFromString(t.rawType)) {
       true
-    else
+    }
+    else {
       t match {
-        case o:OptionType[_] => canBuildFromStringValue(o.elementType)
+        case o: OptionType[_] => canBuildFromStringValue(o.elementType)
         case _ => false
       }
+    }
   }
 
   def set(path: Path, value: Any) {
-    if(path.isEmpty) {
+    if (path.isEmpty) {
       // do nothing
       return
     }
     val name = path.head
     val p = findParameter(name)
-    if(p.isEmpty) {
+    if (p.isEmpty) {
       error(s"no parameter is found for path $path")
       return
     }
@@ -112,7 +111,7 @@ trait StandardBuilder[ParamType <: Parameter] extends GenericBuilder with Logger
     trace(s"set path $path : $value")
 
 
-    if(path.isLeaf) {
+    if (path.isLeaf) {
       val valueType = p.get.valueType
       trace(s"update value holder name:$name, valueType:$valueType (isArray:${TypeUtil.isArray(valueType.rawType)}) with value:$value")
       if (canBuildFromBuffer(valueType.rawType)) {
@@ -126,9 +125,9 @@ trait StandardBuilder[ParamType <: Parameter] extends GenericBuilder with Logger
           case _ => // do nothing
         }
         val arr = holder.getOrElseUpdate(name, ArrayHolder(new ArrayBuffer[Any])).asInstanceOf[ArrayHolder]
-        TypeConverter.convert(value, gt) map { arr.holder += _ }
+        TypeConverter.convert(value, gt) map {arr.holder += _}
       }
-      else if(canBuildFromStringValue(valueType)) {
+      else if (canBuildFromStringValue(valueType)) {
         TypeConverter.convert(value, valueType).map { v =>
           holder += name -> Value(v)
         }
@@ -149,7 +148,7 @@ trait StandardBuilder[ParamType <: Parameter] extends GenericBuilder with Logger
     }
   }
 
-  def get(name:String) : Option[Any] = {
+  def get(name: String): Option[Any] = {
     holder.get(name) flatMap {
       case Holder(h) => Some(h.build)
       case Value(v) => Some(v)
@@ -162,7 +161,7 @@ trait StandardBuilder[ParamType <: Parameter] extends GenericBuilder with Logger
   }
 }
 
-class SimpleObjectBuilder[A](cl: Class[A]) extends ObjectBuilder[A] with StandardBuilder[Parameter] with Logger {
+class SimpleObjectBuilder[A](cl: Class[A]) extends ObjectBuilder[A] with StandardBuilder[Parameter] with LogSupport {
 
   private lazy val schema = ObjectSchema(cl)
 
@@ -176,7 +175,7 @@ class SimpleObjectBuilder[A](cl: Class[A]) extends ObjectBuilder[A] with Standar
     val prop = Map.newBuilder[String, Any]
 
     // get the default values of the constructor
-    for(c <- schema.findConstructor; p <- c.params; v <- p.getDefaultValue) {
+    for (c <- schema.findConstructor; p <- c.params; v <- p.getDefaultValue) {
       trace(s"set default parameter $p to $v")
       prop += p.name -> v
     }
