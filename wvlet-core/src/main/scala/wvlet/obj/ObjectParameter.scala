@@ -1,6 +1,8 @@
 package wvlet.obj
 
-import java.lang
+import java.{lang => jl}
+
+import wvlet.log.LogSupport
 
 import scala.reflect.ClassTag
 
@@ -38,7 +40,7 @@ sealed abstract class Parameter(val name: String, val valueType: ObjectType) ext
   * @param name
   * @param valueType
   */
-case class ConstructorParameter(owner: Class[_], fieldOwner: Option[Class[_]], index: Int, override val name: String, override val valueType: ObjectType) extends Parameter(name, valueType) with Logger {
+case class ConstructorParameter(owner: Class[_], fieldOwner: Option[Class[_]], index: Int, override val name: String, override val valueType: ObjectType) extends Parameter(name, valueType) with LogSupport {
   lazy val field : jl.reflect.Field =
     if(fieldOwner.isDefined)
       fieldOwner.get.getDeclaredField(name)
@@ -102,7 +104,7 @@ case class ConstructorParameter(owner: Class[_], fieldOwner: Option[Class[_]], i
   * @param valueType
   */
 case class FieldParameter(owner: Class[_], ref: Class[_], override val name: String, override val valueType: ObjectType)
-  extends Parameter(name, valueType) with Logger {
+  extends Parameter(name, valueType) with LogSupport {
   lazy val field = {
     try
       owner.getDeclaredField(name)
@@ -188,7 +190,7 @@ case class ScMethod(owner: Class[_], jMethod: jl.reflect.Method, name: String, p
 }
 
 case class CompanionMethod(owner:Class[_], jMethod:jl.reflect.Method, name:String, params: Array[MethodParameter], returnType: ObjectType)
-  extends ObjectMethod with Logger
+  extends ObjectMethod with LogSupport
 {
   def findAnnotationOf[T <: jl.annotation.Annotation](implicit c: ClassTag[T]): Option[T] = {
     jMethod.getAnnotation(c.runtimeClass.asInstanceOf[Class[T]]) match {

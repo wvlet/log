@@ -47,7 +47,7 @@ class ObjectSchemaTest extends WvletSpec {
 
   "ObjectSchema" should {
     "enumerate all fields" taggedAs("schema") in {
-      val s = new ObjectSchema(classOf[A])
+      val s = ObjectSchema(classOf[A])
       debug(s)
       val c = s.constructor
       c.params.length shouldBe 2

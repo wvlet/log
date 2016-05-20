@@ -11,7 +11,7 @@ object Reflect {
     * Set the accessibility flag of fields and methods if they are not accessible, then
     * do some operation, and reset the accessibility properly upon the completion.
     */
-  private[lens] def access[A <: jr.AccessibleObject, B](f: A)(body: => B): B = {
+  private[obj] def access[A <: jr.AccessibleObject, B](f: A)(body: => B): B = {
     synchronized {
       val accessible = f.isAccessible
       try {

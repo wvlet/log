@@ -11,9 +11,9 @@ import scala.reflect.runtime.{universe => ru}
 
 object ObjectType extends LogSupport {
 
-  private[lens] def mirror = ru.runtimeMirror(Thread.currentThread.getContextClassLoader)
+  private[obj] def mirror = ru.runtimeMirror(Thread.currentThread.getContextClassLoader)
 
-  private[lens] val typeTable = mutable.WeakHashMap[ru.Type, ObjectType]()
+  private[obj] val typeTable = mutable.WeakHashMap[ru.Type, ObjectType]()
 
   def apply[A: TypeTag](obj: A): ObjectType = {
     obj match {
