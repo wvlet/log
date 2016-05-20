@@ -7,23 +7,25 @@ import scala.reflect.ClassTag
 /**
   *
   */
-trait ConfigService {
-  def getConfigOf[ConfigType : ClassTag](path:String, env:String) : ConfigType
+trait Config {
+  def of[ConfigType : ClassTag](env:String) : ConfigType
 }
 
-trait ConfigServiceProvider {
-  val configService : ConfigService = new YamlConfigService
+trait ConfigProvider {
+  val config : Config = new YamlConfig
 }
 
-class YamlConfigService(basePath:String = "") extends ConfigService {
-  require(basePath != null, "basePath is null")
+trait YamlConfig extends Config {
+  val configPath : String
 
-  override def getConfigOf[ConfigType: ClassTag](path: String, env: String): ConfigType = {
+  require(configPath != null, "basePath is null")
+
+  def of[ConfigType: ClassTag](path:String, env: String): ConfigType = {
     val configFilePath =
-      if(basePath.isEmpty)
+      if(configPath.isEmpty)
         new File(path)
       else
-        new File(basePath, path)
+        new File(configPath, path)
 
     YamlReader.load[ConfigType](configFilePath.getPath, env)
   }
