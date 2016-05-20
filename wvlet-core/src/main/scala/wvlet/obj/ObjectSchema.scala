@@ -18,8 +18,7 @@ package wvlet.obj
 import java.lang.{reflect => jr}
 import java.{lang => jl}
 
-import xerial.core.log.Logger
-import xerial.lens._
+import wvlet.log.LogSupport
 
 import scala.collection.mutable.WeakHashMap
 import scala.language.implicitConversions
@@ -27,17 +26,11 @@ import scala.reflect.ClassTag
 import scala.reflect.internal.MissingRequirementError
 import scala.tools.scalap.scalax.rules.scalasig._
 
-//--------------------------------------
-//
-// ObjectSchema.scala
-// Since: 2012/01/17 10:05
-//
-//--------------------------------------
-
 /**
   * Object information extractor
+  * @since 2012/01/17 10:05
   */
-object ObjectSchema extends Logger {
+object ObjectSchema extends LogSupport {
 
   import TypeUtil._
 
@@ -280,10 +273,6 @@ object ObjectSchema extends Logger {
         val entries = parseEntries(sig)
 
         val parents = findParentSchemas(cl)
-        val logger = getLogger("parameter")
-        if (!parents.isEmpty) {
-          logger.trace(s"parents: ${parents.mkString(", ")}")
-        }
         val parentParams = parents.flatMap {
           p => p.parameters
         }.collect {
@@ -516,7 +505,7 @@ object ObjectSchema extends Logger {
   *
   * @author leo
   */
-case class ObjectSchema(cl: Class[_], parameters: Seq[Parameter]) extends Logger {
+case class ObjectSchema(cl: Class[_], parameters: Seq[Parameter]) extends LogSupport {
 
   if (cl == null) {
     throw new NullPointerException("input class is null")
