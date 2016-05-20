@@ -91,9 +91,9 @@ lazy val wvletCore =
     description := "wvlet core module",
     libraryDependencies ++= Seq(
       "org.xerial" %% "xerial-core" % "3.5.0",
-      "org.xerial" %% "xerial-lens" % "3.5.0",
-      "org.msgpack" % "msgpack-core" % "0.8.7",
-      "com.typesafe.scala-logging" %% "scala-logging" % "3.1.0"
+      "org.scala-lang" % "scalap" % scalaVersion.value,
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+      "org.msgpack" % "msgpack-core" % "0.8.7"
     )
   ).dependsOn(wvletLog, wvletTest % "test->compile")
 
