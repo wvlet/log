@@ -19,6 +19,7 @@ import java.lang.{reflect => jr}
 import java.{lang => jl}
 
 import wvlet.log.LogSupport
+import wvlet.obj.ObjectBuilder.CanonicalNameFormatter
 
 import scala.collection.mutable.WeakHashMap
 import scala.language.implicitConversions
@@ -521,17 +522,17 @@ case class ObjectSchema(cl: Class[_], parameters: Seq[Parameter]) extends LogSup
   lazy val methods: Array[ObjectMethod] = methodsOf(cl)
 
   lazy private val parameterIndex: Map[String, Parameter] = {
-    val pair = for (a <- parameters) yield a.name -> a
+    val pair = for (a <- parameters) yield CanonicalNameFormatter.format(a.name) -> a
     pair.toMap
   }
 
   def getParameter(name: String): Parameter = {
-    parameterIndex(name)
+    parameterIndex(CanonicalNameFormatter.format(name))
   }
   def findParameter(name: String): Option[Parameter] = {
-    parameterIndex.get(name)
+    parameterIndex.get(CanonicalNameFormatter.format(name))
   }
-  def containsParameter(name: String) = parameterIndex.contains(name)
+  def containsParameter(name: String) = parameterIndex.contains(CanonicalNameFormatter.format(name))
 
   lazy val constructor: Constructor = {
     findConstructor match {

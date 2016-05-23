@@ -3,6 +3,7 @@ package wvlet.obj
 import java.{lang => jl}
 
 import wvlet.log.LogSupport
+import wvlet.obj.ObjectBuilder.CanonicalNameFormatter
 
 import scala.reflect.ClassTag
 
@@ -17,6 +18,8 @@ sealed abstract class Parameter(val name: String, val valueType: ObjectType) ext
   val rawType = valueType.rawType
 
   override def toString = "%s:%s".format(name, valueType)
+
+  lazy val canonicalName : String = CanonicalNameFormatter.format(name)
 
   def findAnnotationOf[T <: jl.annotation.Annotation](implicit c: ClassTag[T]): Option[T]
 

@@ -1,5 +1,7 @@
 package wvlet.obj
 
+import java.util.Locale
+
 import wvlet.log.LogSupport
 
 import scala.collection.mutable
@@ -28,6 +30,13 @@ object ObjectBuilder extends LogSupport {
   case class Holder[A](holder: ObjectBuilder[A]) extends BuilderElement
   case class Value(value: Any) extends BuilderElement
   case class ArrayHolder(holder: mutable.ArrayBuffer[Any]) extends BuilderElement
+
+  trait ParameterNameFormatter
+  case object CanonicalNameFormatter extends ParameterNameFormatter {
+    def format(name:String) : String = {
+      name.toLowerCase(Locale.US).replaceAll("[_\\.-]", "")
+    }
+  }
 
 }
 
@@ -101,7 +110,7 @@ trait StandardBuilder[ParamType <: Parameter] extends GenericBuilder with LogSup
       // do nothing
       return
     }
-    val name = path.head
+    val name = CanonicalNameFormatter.format(path.head)
     val p = findParameter(name)
     if (p.isEmpty) {
       error(s"no parameter is found for path $path")
@@ -109,7 +118,6 @@ trait StandardBuilder[ParamType <: Parameter] extends GenericBuilder with LogSup
     }
 
     trace(s"set path $path : $value")
-
 
     if (path.isLeaf) {
       val valueType = p.get.valueType
@@ -138,7 +146,8 @@ trait StandardBuilder[ParamType <: Parameter] extends GenericBuilder with LogSup
     }
     else {
       // nested object
-      val h = holder.getOrElseUpdate(path.head, Holder(ObjectBuilder(p.get.valueType.rawType)))
+      val paramName = CanonicalNameFormatter.format(path.head)
+      val h = holder.getOrElseUpdate(paramName, Holder(ObjectBuilder(p.get.valueType.rawType)))
       h match {
         case Holder(b) => b.set(path.tailPath, value)
         case other =>
@@ -149,11 +158,12 @@ trait StandardBuilder[ParamType <: Parameter] extends GenericBuilder with LogSup
   }
 
   def get(name: String): Option[Any] = {
-    holder.get(name) flatMap {
+    val paramName = CanonicalNameFormatter.format(name)
+    holder.get(paramName) flatMap {
       case Holder(h) => Some(h.build)
       case Value(v) => Some(v)
       case ArrayHolder(h) => {
-        val p = getParameterTypeOf(name)
+        val p = getParameterTypeOf(paramName)
         debug(s"convert array holder:$h into $p")
         TypeConverter.convert(h, p)
       }
