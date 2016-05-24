@@ -34,7 +34,7 @@ object ObjectBuilder extends LogSupport {
   trait ParameterNameFormatter
   case object CanonicalNameFormatter extends ParameterNameFormatter {
     def format(name:String) : String = {
-      name.toLowerCase(Locale.US).replaceAll("[_\\.-]", "")
+      name.toLowerCase(Locale.US).replaceAll("[ _\\.-]", "")
     }
   }
 
@@ -82,7 +82,7 @@ trait StandardBuilder[ParamType <: Parameter] extends GenericBuilder with LogSup
         val b = ObjectBuilder(p.rawType)
         val schema = ObjectSchema(p.rawType)
         for (p <- schema.constructor.params) {
-          b.set(p.name, p.get(value))
+          b.set(p.canonicalName, p.get(value))
         }
         Holder(b)
       }
@@ -187,7 +187,7 @@ class SimpleObjectBuilder[A](cl: Class[A]) extends ObjectBuilder[A] with Standar
     // get the default values of the constructor
     for (c <- schema.findConstructor; p <- c.params; v <- p.getDefaultValue) {
       trace(s"set default parameter $p to $v")
-      prop += p.name -> v
+      prop += p.canonicalName -> v
     }
     val r = prop.result
     trace(s"class ${cl.getSimpleName}. values to set: $r")
@@ -199,7 +199,7 @@ class SimpleObjectBuilder[A](cl: Class[A]) extends ObjectBuilder[A] with Standar
     val cc = schema.constructor
     // Prepare constructor args
     val args = (for (p <- cc.params) yield {
-      (get(p.name) getOrElse TypeUtil.zero(p.rawType, p.valueType)).asInstanceOf[AnyRef]
+      (get(p.canonicalName) getOrElse TypeUtil.zero(p.rawType, p.valueType)).asInstanceOf[AnyRef]
     })
     trace(s"cc:$cc, args:${args.mkString(", ")} (size:${args.length})")
     cc.newInstance(args).asInstanceOf[A]

@@ -1,7 +1,7 @@
 default:
   id: 1
-  name: default-config
+  full name: default-config
 
 staging:
   id: 2
-  name: staging-config
+  fullName: staging-config

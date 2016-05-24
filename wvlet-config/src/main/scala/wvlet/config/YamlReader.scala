@@ -2,12 +2,14 @@ package wvlet.config
 
 import org.yaml.snakeyaml.Yaml
 import wvlet.log.LogSupport
-import xerial.lens.ObjectBuilder
+import java.{util => ju}
 
 import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.collection.immutable.ListMap
 import scala.reflect.ClassTag
 import wvlet.core._
+import wvlet.obj.ObjectBuilder
 
 object YamlReader extends LogSupport {
 
@@ -28,12 +30,20 @@ object YamlReader extends LogSupport {
     map.result
   }
 
-  def loadYaml(resourcePath: String): java.util.Map[AnyRef, AnyRef] = {
-    new Yaml().load(readAsString(resourcePath)).asInstanceOf[java.util.Map[AnyRef, AnyRef]]
+  def loadYaml(resourcePath: String): Map[AnyRef, AnyRef] = {
+    new Yaml()
+    .load(readAsString(resourcePath))
+    .asInstanceOf[ju.Map[AnyRef, AnyRef]]
+    .toMap
   }
 
-  def loadYamlList(resourcePath: String): java.util.List[java.util.Map[AnyRef, AnyRef]] = {
-    new Yaml().load(readAsString(resourcePath)).asInstanceOf[java.util.List[java.util.Map[AnyRef, AnyRef]]]
+  def loadYamlList(resourcePath: String): Seq[Map[AnyRef, AnyRef]] = {
+    new Yaml()
+    .load(readAsString(resourcePath))
+    .asInstanceOf[ju.List[ju.Map[AnyRef, AnyRef]]]
+    .asScala
+    .map(_.asScala.toMap)
+    .toSeq
   }
 
   def bind[A](prop: java.util.Map[AnyRef, AnyRef])(implicit m: ClassTag[A]): A = {
