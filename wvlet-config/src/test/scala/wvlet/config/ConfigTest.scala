@@ -7,9 +7,9 @@ case class MyConfig(id: Int, fullName: String)
 /**
   *
   */
-class ConfigServiceTest extends WvletSpec {
+class ConfigTest extends WvletSpec {
 
-  "ConfigService" should {
+  "Config" should {
     "map yaml file into a case class" in {
 
       val config = Config.newBuilder
