@@ -1,5 +1,7 @@
 Release Notes
 ====
+2016-05-23 0.7
+ * Add wvlet-config 
 
 2016-05-16 0.4
  * Add LogRotationHandler
