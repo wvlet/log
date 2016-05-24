@@ -7,7 +7,7 @@ object Config {
 
   def newBuilder: ConfigBuilder = new ConfigBuilderImpl
   def newBuilder(base: Config): ConfigBuilder = {
-    new ConfigBuilderImpl().add(base)
+    new ConfigBuilderImpl().addAll(base)
   }
 }
 
@@ -27,6 +27,7 @@ trait ConfigBuilder {
   def registerFromYaml[ConfigType: ClassTag](env: String, configFilePath: String): ConfigBuilder
   def registerAllFromYaml[ConfigType: ClassTag](configFilePath: String): ConfigBuilder
   def register[ConfigType: ClassTag](env: String, config: ConfigType): ConfigBuilder
-  def add(config: Config): ConfigBuilder
+  def addAll(config: Config): ConfigBuilder
+  def add(config:ConfigHolder) : ConfigBuilder
 }
 

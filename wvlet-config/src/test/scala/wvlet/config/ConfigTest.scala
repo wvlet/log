@@ -40,7 +40,7 @@ class ConfigTest extends WvletSpec {
       c2.fullName shouldBe "staging-config"
     }
 
-    "override config" in {
+    "alloww override" in {
       val config = Config.newBuilder
                    .registerAllFromYaml[MyConfig]("wvlet-config/src/test/resources/myconfig.yml")
                    .register[MyConfig]("default", MyConfig(10, "hello"))
