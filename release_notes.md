@@ -1,5 +1,8 @@
 Release Notes
 ====
+2016-06-03 0.8
+ * Fix logger methods
+
 2016-05-23 0.7
  * Add wvlet-config 
 
