@@ -1,4 +1,4 @@
-package wvlet
+package wvlet.core.io
 
 import java.io._
 import java.net.ServerSocket
@@ -7,7 +7,7 @@ import java.nio.charset.StandardCharsets
 /**
   *
   */
-package object core {
+object IOUtil {
 
   def withResource[Resource <: AutoCloseable, U](resource: Resource)(body: Resource => U): U = {
     try {
@@ -18,7 +18,7 @@ package object core {
     }
   }
 
-  def randomPort: Int = {
+  def unusedPort: Int = {
     withResource(new ServerSocket(0)) { socket =>
       socket.getLocalPort
     }

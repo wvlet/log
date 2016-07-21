@@ -61,7 +61,7 @@ lazy val wvlet =
     publish := {},
     publishLocal := {},
     packExclude := Seq("wvlet")
-  ).aggregate(wvletCore, wvletTest, wvletLog, wvletConfig) //, wvletLens, wvletJdbc, wvletDataframe, wvletRest, wvletTest, wvletCui)
+  ).aggregate(wvletCore, wvletTest, wvletLog, wvletConfig, wvletJmx) //, wvletLens, wvletJdbc, wvletDataframe, wvletRest, wvletTest, wvletCui)
 
 lazy val wvletLog =
   Project(id = "wvlet-log", base = file("wvlet-log")).settings(
@@ -73,6 +73,15 @@ lazy val wvletLog =
       "org.scalatest" %% "scalatest" % "2.2.+" % "test"
     )
   )
+
+lazy val wvletJmx =
+  Project(id = "wvlet-jmx", base = file("wvlet-jmx")).settings(
+    buildSettings,
+    description := "Handy logging wrapper for java.util.logging",
+    libraryDependencies ++= Seq(
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value
+    )
+  ).dependsOn(wvletLog, wvletTest % "test->compile")
 
 lazy val wvletConfig =
   Project(id = "wvlet-config", base = file("wvlet-config")).settings(
