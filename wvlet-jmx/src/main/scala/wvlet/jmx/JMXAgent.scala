@@ -73,15 +73,15 @@ class JMXAgent(config: JMXConfig) extends LogSupport {
   val serviceUrl : String = {
     currentJMXRegistry match {
       case Some(jmxReg) =>
+        info(s"JMX registry is already running at ${jmxReg}")
         if(config.registryPort.isDefined) {
-          info(s"JMX registry is already running at ${jmxReg}")
           val expectedPort = config.registryPort.get
           if (expectedPort != jmxReg.port) {
             throw new IllegalStateException(
               s"JMX registry is already running using an unexpected port: ${jmxReg.port}. Expected port = ${expectedPort}")
           }
         }
-        s"service:jmx:rmi:///jndi/rmi://localhost:${jmxReg.port}/jmxrmi"
+        s"service:jmx:rmi:///jndi/rmi://${jmxReg.host}:${jmxReg.port}/jmxrmi"
       case None =>
         val registryPort = config.registryPort.getOrElse(unusedPort)
         val rmiPort = config.rmiPort.getOrElse(unusedPort)

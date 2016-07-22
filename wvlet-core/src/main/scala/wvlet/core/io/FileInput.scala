@@ -3,7 +3,7 @@ package wvlet.core.io
 import java.io.{BufferedInputStream, File, FileInputStream, InputStream}
 import java.nio.file.Path
 
-import wvlet.core._
+import wvlet.core.io.IOUtil._
 
 /**
   *

@@ -8,7 +8,7 @@ import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 import scala.collection.immutable.ListMap
 import scala.reflect.ClassTag
-import wvlet.core._
+import wvlet.core.io.IOUtil._
 import wvlet.obj.ObjectBuilder
 
 object YamlReader extends LogSupport {
