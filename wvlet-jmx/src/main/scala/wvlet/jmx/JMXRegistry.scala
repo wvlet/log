@@ -5,13 +5,14 @@ import javax.management._
 
 import wvlet.log.LogSupport
 
+import scala.util.{Failure, Try}
 
 /**
   *
   */
-object JMXRegistry extends LogSupport {
+trait JMXRegistry extends JMXMBeanService with LogSupport {
 
-  private val mbeanServer = ManagementFactory.getPlatformMBeanServer
+  private var registeredMBean = Set.empty[ObjectName]
 
   def register[A](obj: A) {
     val cl = obj.getClass
@@ -26,12 +27,26 @@ object JMXRegistry extends LogSupport {
 
   def register[A](objectName: ObjectName, obj: A) {
     val mbean = JMXMBean.of(obj)
-    info(s"Registering mbean: ${mbean}")
     mbeanServer.registerMBean(mbean, objectName)
+    synchronized {
+      registeredMBean += objectName
+    }
+    info(s"Registered mbean: ${mbean}")
   }
 
-  def unregister(name:String) {
+  def unregister(name: String) {
     mbeanServer.unregisterMBean(new ObjectName(name))
   }
 
+  def unregisterAll {
+    synchronized {
+      for (name <- registeredMBean) {
+        Try(mbeanServer.unregisterMBean(name)) match {
+          case Failure(e) =>
+            error(e.getMessage, e)
+          case _ =>
+        }
+      }
+    }
+  }
 }

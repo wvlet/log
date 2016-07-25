@@ -13,15 +13,13 @@ class JMXAgentTest extends WvletSpec {
   "JMXAgent" should {
     "find jmx registry" in {
       val agent = new JMXAgent(new JMXConfig())
-      val url = new JMXServiceURL(agent.serviceUrl)
-      val connector = JMXConnectorFactory.connect(url)
-      connector.connect()
-
-      val connection = connector.getMBeanServerConnection()
-      connection.getMBeanCount.toInt shouldBe >(0)
-      val m = connection.getMBeanInfo(new ObjectName("java.lang:type=OperatingSystem"))
-      m shouldNot be(null)
-      info(m)
+      agent.withConnetor { connector =>
+        val connection = connector.getMBeanServerConnection()
+        connection.getMBeanCount.toInt shouldBe >(0)
+        val m = connection.getMBeanInfo(new ObjectName("java.lang:type=OperatingSystem"))
+        m shouldNot be(null)
+        info(m)
+      }
     }
   }
 }
