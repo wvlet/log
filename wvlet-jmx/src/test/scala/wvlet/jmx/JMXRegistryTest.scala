@@ -1,9 +1,5 @@
 package wvlet.jmx
 
-import javax.management.remote.{JMXConnectorFactory, JMXServiceURL}
-import javax.management.{MBeanInfo, ObjectName}
-
-import wvlet.core.io.IOUtil
 import wvlet.test.WvletSpec
 
 import scala.util.Random
@@ -16,7 +12,7 @@ class SampleMBean {
   }
 }
 
-case class FieldMBean(@JMX a:Int, @JMX b:String)
+case class FieldMBean(@JMX a: Int, @JMX b: String)
 
 class NestedMBean {
   @JMX(description = "nested stat")
@@ -25,7 +21,7 @@ class NestedMBean {
   }
 }
 
-case class Stat(@JMX count:Int, @JMX state:String)
+case class Stat(@JMX count: Int, @JMX state: String)
 
 /**
   *

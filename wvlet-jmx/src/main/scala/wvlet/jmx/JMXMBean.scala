@@ -60,14 +60,14 @@ object JMXMBean {
     def valueType : ObjectType
   }
 
-  class MBeanObjectParameter(val name:String, val description:String, param:ObjectParameter) extends MBeanParameter  {
+  case class MBeanObjectParameter(name:String, description:String, param:ObjectParameter) extends MBeanParameter  {
     def valueType = param.valueType
     override def get(obj: AnyRef): AnyRef = {
       param.get(obj).asInstanceOf[AnyRef]
     }
   }
 
-  class NestedMBeanParameter(val name:String, val description:String, parentParam:ObjectParameter, nestedParam:ObjectParameter) extends MBeanParameter {
+  case class NestedMBeanParameter(name:String, description:String, parentParam:ObjectParameter, nestedParam:ObjectParameter) extends MBeanParameter {
     def valueType = nestedParam.valueType
     override def get(obj: AnyRef): AnyRef = {
       nestedParam.get(parentParam.get(obj)).asInstanceOf[AnyRef]
@@ -96,9 +96,9 @@ object JMXMBean {
         Seq(
           parent match {
             case Some(pt) =>
-              new NestedMBeanParameter(paramName, description, pt, p)
+              NestedMBeanParameter(paramName, description, pt, p)
             case None =>
-              new MBeanObjectParameter(paramName, description, p)
+              MBeanObjectParameter(paramName, description, p)
           }
         )
       }
