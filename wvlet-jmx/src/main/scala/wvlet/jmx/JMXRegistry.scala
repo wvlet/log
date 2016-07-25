@@ -10,7 +10,7 @@ import scala.util.{Failure, Try}
 /**
   *
   */
-trait JMXRegistry extends JMXMBeanService with LogSupport {
+trait JMXRegistry extends JMXMBeanServerService with LogSupport {
 
   private var registeredMBean = Set.empty[ObjectName]
 

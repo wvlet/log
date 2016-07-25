@@ -3,14 +3,12 @@ package wvlet.jmx
 import java.lang.management.ManagementFactory
 import java.net.ServerSocket
 import java.rmi.server.RemoteObject
-import javax.management.{MBeanInfo, ObjectName}
 import javax.management.remote.{JMXConnector, JMXConnectorFactory, JMXConnectorServer, JMXServiceURL}
+import javax.management.{MBeanInfo, ObjectName}
 
 import sun.management.Agent
 import sun.management.jmxremote.ConnectorBootstrap
 import sun.rmi.server.UnicastRef
-import wvlet.core.io.IOUtil
-import wvlet.core.io.IOUtil._
 import wvlet.log.LogSupport
 
 import scala.reflect.ClassTag
@@ -70,20 +68,19 @@ object JMXAgent extends LogSupport {
   }
 }
 
-trait JMXMBeanService {
-  protected lazy val mbeanServer     = ManagementFactory.getPlatformMBeanServer
+trait JMXMBeanServerService {
+  protected lazy val mbeanServer = ManagementFactory.getPlatformMBeanServer
 }
 
-
-class JMXAgent(config: JMXConfig) extends JMXRegistry with JMXMBeanService with LogSupport {
+class JMXAgent(config: JMXConfig) extends JMXRegistry with JMXMBeanServerService with LogSupport {
 
   import JMXAgent._
 
-  val serviceUrl : JMXServiceURL = {
+  val serviceUrl: JMXServiceURL = {
     val url = currentJMXRegistry match {
       case Some(jmxReg) =>
         info(s"JMX registry is already running at ${jmxReg}")
-        if(config.registryPort.isDefined) {
+        if (config.registryPort.isDefined) {
           val expectedPort = config.registryPort.get
           if (expectedPort != jmxReg.port) {
             throw new IllegalStateException(
@@ -112,19 +109,19 @@ class JMXAgent(config: JMXConfig) extends JMXRegistry with JMXMBeanService with 
     new JMXServiceURL(url)
   }
 
-  def withConnetor[U](f: JMXConnector => U) : U = {
+  def withConnetor[U](f: JMXConnector => U): U = {
     withResource(JMXConnectorFactory.connect(serviceUrl)) { connector =>
       f(connector)
     }
   }
 
   def getMBeanInfo(mbeanName: String): MBeanInfo = {
-    withConnetor{ connector =>
+    withConnetor { connector =>
       connector.getMBeanServerConnection.getMBeanInfo(new ObjectName(mbeanName))
     }
   }
 
-  def getMBeanAttr(mbeanName: String, attrName:String): Any = {
+  def getMBeanAttribute(mbeanName: String, attrName: String): Any = {
     withConnetor { connector =>
       connector.getMBeanServerConnection.getAttribute(new ObjectName(mbeanName), attrName)
     }

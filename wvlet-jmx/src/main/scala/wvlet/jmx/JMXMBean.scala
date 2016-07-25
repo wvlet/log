@@ -4,12 +4,13 @@ import java.lang.annotation.Annotation
 import java.lang.reflect.Method
 import javax.management._
 
-import wvlet.obj.{ObjectMethod, ObjectSchema, Parameter}
+import wvlet.obj._
+import JMXMBean._
 
 /**
   * Expose object information using DynamicMBean
   */
-case class JMXMBean(obj: AnyRef, mBeanInfo: MBeanInfo, attributes: Seq[ObjectMethod]) extends DynamicMBean {
+case class JMXMBean(obj: AnyRef, mBeanInfo: MBeanInfo, attributes: Seq[MBeanParameter]) extends DynamicMBean {
   assert(obj != null)
   private lazy val attributeTable = attributes.map(a => a.name -> a).toMap
 
@@ -22,7 +23,7 @@ case class JMXMBean(obj: AnyRef, mBeanInfo: MBeanInfo, attributes: Seq[ObjectMet
   }
   override def getAttribute(attribute: String): AnyRef = {
     attributeTable.get(attribute) match {
-      case Some(a) => a.invoke(obj).asInstanceOf[AnyRef]
+      case Some(a) => a.get(obj)
       case None =>
         throw new AttributeNotFoundException(s"${attribute} is not found in ${obj.getClass.getName}")
     }
@@ -52,30 +53,75 @@ case class JMXMBean(obj: AnyRef, mBeanInfo: MBeanInfo, attributes: Seq[ObjectMet
 
 object JMXMBean {
 
+  sealed trait MBeanParameter {
+    def name : String
+    def description : String
+    def get(obj:AnyRef) : AnyRef
+    def valueType : ObjectType
+  }
+
+  class MBeanObjectParameter(val name:String, val description:String, param:ObjectParameter) extends MBeanParameter  {
+    def valueType = param.valueType
+    override def get(obj: AnyRef): AnyRef = {
+      param.get(obj).asInstanceOf[AnyRef]
+    }
+  }
+
+  class NestedMBeanParameter(val name:String, val description:String, parentParam:ObjectParameter, nestedParam:ObjectParameter) extends MBeanParameter {
+    def valueType = nestedParam.valueType
+    override def get(obj: AnyRef): AnyRef = {
+      nestedParam.get(parentParam.get(obj)).asInstanceOf[AnyRef]
+    }
+  }
+
+  private def isNestedMBean(vt:ObjectType) : Boolean = {
+    val schema = ObjectSchema(vt.rawType)
+    schema.parameters.find(_.findAnnotationOf[JMX].isDefined).isDefined ||
+      schema.methods.find(_.findAnnotationOf[JMX].isDefined).isDefined
+  }
+
+
+  private def collectMBeanParameters(parent:Option[ObjectParameter], cl:Class[_]) : Seq[MBeanParameter] = {
+    val schema = ObjectSchema(cl)
+
+    val jmxParams : Seq[ObjectParameter] = (schema.parameters ++ schema.methods).filter(_.findAnnotationOf[JMX].isDefined)
+    jmxParams
+    .flatMap{ p =>
+      val description = p.findAnnotationOf[JMX].map(_.description()).getOrElse("")
+      val paramName = parent.map(x => s"${x.name}.${p.name}").getOrElse(p.name)
+      if(isNestedMBean(p.valueType)) {
+        collectMBeanParameters(Some(p), p.valueType.rawType)
+      }
+      else {
+        Seq(
+          parent match {
+            case Some(pt) =>
+              new NestedMBeanParameter(paramName, description, pt, p)
+            case None =>
+              new MBeanObjectParameter(paramName, description, p)
+          }
+        )
+      }
+    }
+  }
+
   private case class JMXMethod(m: ObjectMethod, jmxAnnotation: JMX)
 
   def of[A](obj: A): JMXMBean = {
     val cl = obj.getClass
-    val schema = ObjectSchema(cl)
-    val jmxMethods =
-      schema
-      .methods
-      .collect {
-        case m if m.findAnnotationOf[JMX].isDefined =>
-          JMXMethod(m, m.findAnnotationOf[JMX].get)
-      }
-
     val description = cl.getAnnotation(classOf[JMX]) match {
       case a if a != null => a.description()
       case _ => ""
     }
 
-    val attrInfo = jmxMethods.map { x =>
+    // Collect JMX parameters from the class
+    val mbeanParams = collectMBeanParameters(None, cl)
+    val attrInfo = mbeanParams.map { x =>
       val desc = new ImmutableDescriptor()
       new MBeanAttributeInfo(
-        x.m.name,
-        x.m.returnType.rawType.getName,
-        x.jmxAnnotation.description(),
+        x.name,
+        x.valueType.rawType.getName,
+        x.description,
         true,
         false,
         false
@@ -91,7 +137,7 @@ object JMXMBean {
       Array.empty[MBeanNotificationInfo]
     )
 
-    new JMXMBean(obj.asInstanceOf[AnyRef], mbeanInfo, jmxMethods.map(_.m))
+    new JMXMBean(obj.asInstanceOf[AnyRef], mbeanInfo, mbeanParams)
   }
 
   def collectUniqueAnnotations(m: Method): Seq[Annotation] = {

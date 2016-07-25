@@ -14,12 +14,20 @@ import scala.reflect.ClassTag
   * @param name
   * @param valueType
   */
-sealed abstract class Parameter(val name: String, val valueType: ObjectType) extends Serializable {
+sealed abstract class Parameter(val name: String, val valueType: ObjectType) extends ObjectParameter with Serializable {
   val rawType = valueType.rawType
 
   override def toString = "%s:%s".format(name, valueType)
 
   lazy val canonicalName : String = CanonicalNameFormatter.format(name)
+}
+
+trait ObjectParameter {
+  def name : String
+  def valueType : ObjectType
+
+  def get(x:Any) : Any
+  def set(obj: Any, value:Any) { throw new UnsupportedOperationException(s"set is not supported for ${this}")}
 
   def findAnnotationOf[T <: jl.annotation.Annotation](implicit c: ClassTag[T]): Option[T]
 
@@ -28,13 +36,7 @@ sealed abstract class Parameter(val name: String, val valueType: ObjectType) ext
       case x if (c.runtimeClass isAssignableFrom x.annotationType) => x
     }.asInstanceOf[Option[T]]
   }
-
-  def get(obj: Any): Any
-
-  def set(obj: Any, value:Any) { throw new UnsupportedOperationException(s"set is not supported for ${this}")}
 }
-
-
 
 /**
   * Represents a constructor parameter
@@ -180,6 +182,7 @@ case class ScMethod(owner: Class[_], jMethod: jl.reflect.Method, name: String, p
   extends ObjectMethod {
   override def toString = "Method(%s#%s, [%s], %s)".format(owner.getSimpleName, name, params.mkString(", "), returnType)
 
+  def valueType = returnType
   def findAnnotationOf[T <: jl.annotation.Annotation](implicit c: ClassTag[T]): Option[T] = {
     jMethod.getAnnotation(c.runtimeClass.asInstanceOf[Class[T]]) match {
       case null => None
@@ -192,6 +195,11 @@ case class ScMethod(owner: Class[_], jMethod: jl.reflect.Method, name: String, p
 
   override def hashCode = {
     owner.hashCode() + name.hashCode()
+  }
+
+
+  def get(x:Any) : Any = {
+    invoke(x.asInstanceOf[AnyRef])
   }
 
   def invoke(obj:AnyRef, params:AnyRef*) : Any = {
@@ -202,6 +210,8 @@ case class ScMethod(owner: Class[_], jMethod: jl.reflect.Method, name: String, p
 case class CompanionMethod(owner:Class[_], jMethod:jl.reflect.Method, name:String, params: Array[MethodParameter], returnType: ObjectType)
   extends ObjectMethod with LogSupport
 {
+
+  def valueType = returnType
   def findAnnotationOf[T <: jl.annotation.Annotation](implicit c: ClassTag[T]): Option[T] = {
     jMethod.getAnnotation(c.runtimeClass.asInstanceOf[Class[T]]) match {
       case null => None
@@ -216,6 +226,10 @@ case class CompanionMethod(owner:Class[_], jMethod:jl.reflect.Method, name:Strin
     owner.hashCode() + name.hashCode()
   }
 
+  def get(x:Any) : Any = {
+    invoke(x.asInstanceOf[AnyRef])
+  }
+
   def invoke(obj:AnyRef, params:AnyRef*) : Any = {
     debug(s"invoking jMethod:$jMethod, owner:$owner")
     TypeUtil.companionObject(owner).map{ co =>
@@ -223,7 +237,6 @@ case class CompanionMethod(owner:Class[_], jMethod:jl.reflect.Method, name:Strin
       jMethod.invoke(co, params:_*)
     }.orNull
   }
-
 }
 
 /**
