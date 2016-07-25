@@ -27,6 +27,64 @@ import scala.reflect.ClassTag
 import scala.reflect.internal.MissingRequirementError
 import scala.tools.scalap.scalax.rules.scalasig._
 
+
+/**
+  * Contains information of methods, constructor and parameters defined in a class
+  *
+  * @author leo
+  */
+case class ObjectSchema(cl: Class[_], parameters: Seq[Parameter]) extends LogSupport {
+
+  if (cl == null) {
+    throw new NullPointerException("input class is null")
+  }
+
+  import ObjectSchema._
+
+  val name    : String = cl.getSimpleName
+  val fullName: String = cl.getName
+
+  def findSignature: Option[ScalaSig] = ObjectSchema.findSignature(cl)
+
+  lazy val methods: Seq[ObjectMethod] = methodsOf(cl)
+
+  lazy private val parameterIndex: Map[String, Parameter] = {
+    val pair = for (a <- parameters) yield CanonicalNameFormatter.format(a.name) -> a
+    pair.toMap
+  }
+
+  def getParameter(name: String): Parameter = {
+    parameterIndex(CanonicalNameFormatter.format(name))
+  }
+  def findParameter(name: String): Option[Parameter] = {
+    parameterIndex.get(CanonicalNameFormatter.format(name))
+  }
+  def containsParameter(name: String) = parameterIndex.contains(CanonicalNameFormatter.format(name))
+
+  lazy val constructor: Constructor = {
+    findConstructor match {
+      case Some(c) => c
+      case None => throw new IllegalArgumentException("no constructor is found for " + cl)
+    }
+  }
+  def findConstructor: Option[Constructor] = ObjectSchema.findConstructor(cl)
+
+  override def toString = {
+    findConstructor.map {
+      cc =>
+        if (cc.params.isEmpty) {
+          name
+        }
+        else {
+          "%s(%s)".format(name, cc.params.mkString(", "))
+        }
+    } getOrElse name
+  }
+}
+
+
+
+
 /**
   * Object information extractor
   * @since 2012/01/17 10:05
@@ -500,60 +558,4 @@ object ObjectSchema extends LogSupport {
   }
 
 }
-
-/**
-  * Contains information of methods, constructor and parameters defined in a class
-  *
-  * @author leo
-  */
-case class ObjectSchema(cl: Class[_], parameters: Seq[Parameter]) extends LogSupport {
-
-  if (cl == null) {
-    throw new NullPointerException("input class is null")
-  }
-
-  import ObjectSchema._
-
-  val name    : String = cl.getSimpleName
-  val fullName: String = cl.getName
-
-  def findSignature: Option[ScalaSig] = ObjectSchema.findSignature(cl)
-
-  lazy val methods: Array[ObjectMethod] = methodsOf(cl)
-
-  lazy private val parameterIndex: Map[String, Parameter] = {
-    val pair = for (a <- parameters) yield CanonicalNameFormatter.format(a.name) -> a
-    pair.toMap
-  }
-
-  def getParameter(name: String): Parameter = {
-    parameterIndex(CanonicalNameFormatter.format(name))
-  }
-  def findParameter(name: String): Option[Parameter] = {
-    parameterIndex.get(CanonicalNameFormatter.format(name))
-  }
-  def containsParameter(name: String) = parameterIndex.contains(CanonicalNameFormatter.format(name))
-
-  lazy val constructor: Constructor = {
-    findConstructor match {
-      case Some(c) => c
-      case None => throw new IllegalArgumentException("no constructor is found for " + cl)
-    }
-  }
-  def findConstructor: Option[Constructor] = ObjectSchema.findConstructor(cl)
-
-  override def toString = {
-    findConstructor.map {
-      cc =>
-        if (cc.params.isEmpty) {
-          name
-        }
-        else {
-          "%s(%s)".format(name, cc.params.mkString(", "))
-        }
-    } getOrElse name
-  }
-}
-
-
 

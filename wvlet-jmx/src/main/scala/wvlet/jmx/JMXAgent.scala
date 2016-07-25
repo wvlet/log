@@ -12,7 +12,7 @@ import wvlet.log.LogSupport
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
-case class JMXRegistry(host: String, port: Int)
+case class HostAndPort(host: String, port: Int)
 
 case class JMXConfig(registryPort: Option[Int] = None, rmiPort: Option[Int] = None)
 
@@ -53,13 +53,13 @@ object JMXAgent extends LogSupport {
     }
   }
 
-  private def currentJMXRegistry: Option[JMXRegistry] = {
+  private def currentJMXRegistry: Option[HostAndPort] = {
     val jmxServer = classOf[Agent].getStaticField[JMXConnectorServer]("jmxServer")
     val registry = classOf[ConnectorBootstrap].getStaticField[RemoteObject]("registry")
 
     (jmxServer, registry) match {
       case (Some(jmx), Some(reg)) =>
-        Some(JMXRegistry(jmx.getAddress.getHost, reg.getRef.asInstanceOf[UnicastRef].getLiveRef.getPort))
+        Some(HostAndPort(jmx.getAddress.getHost, reg.getRef.asInstanceOf[UnicastRef].getLiveRef.getPort))
       case other =>
         None
     }

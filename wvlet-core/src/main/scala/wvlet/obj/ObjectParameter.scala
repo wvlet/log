@@ -30,6 +30,8 @@ sealed abstract class Parameter(val name: String, val valueType: ObjectType) ext
   }
 
   def get(obj: Any): Any
+
+  def set(obj: Any, value:Any) { throw new UnsupportedOperationException(s"set is not supported for ${this}")}
 }
 
 
@@ -130,13 +132,18 @@ case class FieldParameter(owner: Class[_], ref: Class[_], override val name: Str
   }
 
   def get(obj: Any) = {
-    try
+    try {
       Reflect.readField(obj, field)
+    }
     catch {
       case e : IllegalAccessException =>
         error(f"get obj: ${obj.getClass}, field:${field.getName}")
         throw e
     }
+  }
+
+  override def set(obj: Any, value:Any) {
+    Reflect.setField(obj, field, value)
   }
 }
 

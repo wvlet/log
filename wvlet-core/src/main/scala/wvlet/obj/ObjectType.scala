@@ -110,6 +110,7 @@ trait Type extends Serializable {
 
 trait ObjectMethod extends Type {
 
+  def returnType : ObjectType
   val params : Array[MethodParameter]
   val jMethod: jl.reflect.Method
   def findAnnotationOf[T <: jl.annotation.Annotation](implicit c: ClassTag[T]): Option[T]

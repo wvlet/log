@@ -81,7 +81,7 @@ lazy val wvletJmx =
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value
     )
-  ).dependsOn(wvletLog, wvletTest % "test->compile")
+  ).dependsOn(wvletLog, wvletCore, wvletTest % "test->compile")
 
 lazy val wvletConfig =
   Project(id = "wvlet-config", base = file("wvlet-config")).settings(
