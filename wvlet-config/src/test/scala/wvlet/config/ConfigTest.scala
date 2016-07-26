@@ -13,8 +13,8 @@ class ConfigTest extends WvletSpec {
     "map yaml file into a case class" in {
 
       val config = Config.newBuilder
-                   .registerFromYaml[MyConfig]("default", "wvlet-config/src/test/resources/myconfig.yml")
-                   .registerFromYaml[MyConfig]("staging", "wvlet-config/src/test/resources/myconfig.yml")
+                   .registerFromYaml[MyConfig]("wvlet-config/src/test/resources/myconfig.yml", "default")
+                   .registerFromYaml[MyConfig]("wvlet-config/src/test/resources/myconfig.yml", "staging")
                    .build
 
       val c1 = config.of[MyConfig]("default")

@@ -1,15 +1,16 @@
 package wvlet.config
 
-import org.yaml.snakeyaml.Yaml
-import wvlet.log.LogSupport
 import java.{util => ju}
+
+import org.yaml.snakeyaml.Yaml
+import wvlet.core.io.IOUtil._
+import wvlet.log.LogSupport
+import wvlet.obj.ObjectBuilder
 
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 import scala.collection.immutable.ListMap
 import scala.reflect.ClassTag
-import wvlet.core.io.IOUtil._
-import wvlet.obj.ObjectBuilder
 
 object YamlReader extends LogSupport {
 

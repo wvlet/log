@@ -31,7 +31,7 @@ object IOUtil {
       path
     }
     else {
-      val defaultPath = new File(new File(System.getProperty("prog.home")), path.getPath)
+      val defaultPath = new File(new File(System.getProperty("prog.home", "")), path.getPath)
       if (!defaultPath.exists()) {
         throw new FileNotFoundException(s"${path} is not found")
       }
@@ -40,6 +40,7 @@ object IOUtil {
   }
 
   def readAsString(resourcePath: String) = {
+    require(resourcePath != null, s"resourcePath is null")
     val file = findPath(new File(resourcePath))
     if (!file.exists()) {
       throw new FileNotFoundException(s"${file} is not found")

@@ -61,7 +61,7 @@ class ConfigBuilderImpl extends ConfigBuilder with LogSupport {
     val cls = ev.runtimeClass
     info(s"Loading configuration in ${configFilePath}, env:${env}")
     val m = YamlReader.loadMapOf[ConfigType](configFilePath)
-    val c = m.get(env) match {
+    val config = m.get(env) match {
       case Some(x) => x
       case None =>
         // Load default
@@ -75,7 +75,7 @@ class ConfigBuilderImpl extends ConfigBuilder with LogSupport {
           }
         )
     }
-    configHolder += ConfigHolder(env, cls, c)
+    configHolder += ConfigHolder(env, cls, config)
     this
   }
 
