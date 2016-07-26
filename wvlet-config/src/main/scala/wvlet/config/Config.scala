@@ -24,7 +24,7 @@ trait ConfigProvider {
 
 trait ConfigBuilder {
   def build: Config
-  def registerFromYaml[ConfigType: ClassTag](env: String, configFilePath: String): ConfigBuilder
+  def registerFromYaml[ConfigType: ClassTag](env: String, configFilePath: String, defaultEnv:String = "default"): ConfigBuilder
 //  def registerFromYaml[ConfigType: ClassTag](env: String, configFilePath: String, defaultEnv:String): ConfigBuilder
   def registerAllFromYaml[ConfigType: ClassTag](configFilePath: String): ConfigBuilder
   def register[ConfigType: ClassTag](env: String, config: ConfigType): ConfigBuilder

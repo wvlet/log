@@ -1,3 +1,4 @@
+
 package wvlet.obj
 
 import wvlet.log.LogSupport
@@ -30,7 +31,7 @@ trait ValueHolder[+A] {
   /**
     * Set a value at the specified path
     *
-    * @param path string representation of [[xerial.lens.Path]]
+    * @param path string representation of [[Path]]
     * @param value
     * @return updated value holder
     */

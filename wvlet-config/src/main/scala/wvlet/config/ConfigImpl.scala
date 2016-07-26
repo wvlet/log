@@ -28,7 +28,7 @@ class ConfigImpl(holder: Seq[ConfigHolder]) extends Config with LogSupport {
   override def iterator: Iterator[ConfigHolder] = holder.iterator
 }
 
-class ConfigBuilderImpl extends ConfigBuilder {
+class ConfigBuilderImpl extends ConfigBuilder with LogSupport {
 
   private var configHolder = Seq.newBuilder[ConfigHolder]
 
@@ -57,14 +57,31 @@ class ConfigBuilderImpl extends ConfigBuilder {
     this
   }
 
-  def registerFromYaml[ConfigType](env: String, configFilePath: String)(implicit ev: ClassTag[ConfigType]): ConfigBuilder = {
+  def registerFromYaml[ConfigType](configFilePath: String, env:String, defaultEnv:String)(implicit ev: ClassTag[ConfigType]): ConfigBuilder = {
     val cls = ev.runtimeClass
-    configHolder += ConfigHolder(env, cls, YamlReader.load[ConfigType](configFilePath, env))
+    info(s"Loading configuration in ${configFilePath}, env:${env}")
+    val m = YamlReader.loadMapOf[ConfigType](configFilePath)
+    val c = m.get(env) match {
+      case Some(x) => x
+      case None =>
+        // Load default
+        warn(s"Configuration for ${env} is not found in ${configFilePath}. Load ${defaultEnv} configuration instead")
+        m.getOrElse(
+          defaultEnv,
+          {
+            val m = s"No congiguration for ${defaultEnv} is found in ${configFilePath}"
+            error(m)
+            throw new IllegalArgumentException(m)
+          }
+        )
+    }
+    configHolder += ConfigHolder(env, cls, c)
     this
   }
 
   def registerAllFromYaml[ConfigType](configFilePath: String)(implicit ev: ClassTag[ConfigType]): ConfigBuilder = {
     val cls = ev.runtimeClass
+    info(s"Loading configuration in ${configFilePath}")
     for ((k, v) <- YamlReader.loadMapOf(configFilePath)) {
       val env = k.toString
       configHolder += ConfigHolder(env, cls, v)
