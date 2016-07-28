@@ -1,5 +1,6 @@
 import ReleaseTransformations._
 
+
 val buildSettings = Seq[Setting[_]](
   scalaVersion := "2.11.8",
   organization := "org.wvlet",
@@ -93,6 +94,17 @@ lazy val wvletConfig =
     )
   ).dependsOn(wvletCore, wvletTest % "test->compile")
 
+lazy val wvletHelix =
+  Project(id = "wvlet-helix", base = file("wvlet-helix")).settings(
+    buildSettings,
+    description := "Helix pattern for weaving components in Scala",
+    libraryDependencies ++= Seq(
+      "javax.inject" % "javax.inject" % "1",
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value
+    ),
+    addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
+  ).dependsOn(wvletCore, wvletLog, wvletTest % "test->compile")
+
 
 lazy val wvletCore =
   Project(id = "wvlet-core", base = file("wvlet-core")).settings(
@@ -105,40 +117,6 @@ lazy val wvletCore =
       "org.msgpack" % "msgpack-core" % "0.8.7"
     )
   ).dependsOn(wvletLog, wvletTest % "test->compile")
-
-lazy val wvletText =
-  Project(id = "wvlet-text", base = file("wvlet-text")).settings(
-    buildSettings,
-    description := "wvlet text-format mapping",
-    libraryDependencies ++= Seq(
-    )
-  ).dependsOn(wvletCore, wvletTest % "test->compile")
-
-lazy val wvletLens =
-  Project(id = "wvlet-lens", base = file("wvlet-lens")).settings(
-    buildSettings,
-    description := "wvlet bi-directional lens module",
-    libraryDependencies ++= Seq(
-      "org.xerial" %% "xerial-lens" % "3.5.0"
-    )
-  ).dependsOn(wvletCore, wvletTest % "test->compile")
-
-lazy val wvletJdbc =
-  Project(id = "wvlet-jdbc", base = file("wvlet-jdbc")).settings(
-    buildSettings,
-    description := "wvlet jdbc mapping",
-    libraryDependencies ++= Seq(
-    )
-  ).dependsOn(wvletCore, wvletTest % "test->compile")
-
-lazy val wvletDataframe =
-  Project(id = "wvlet-dataframe", base = file("wvlet-dataframe")).settings(
-    buildSettings,
-    description := "wvlet dataframe mapping",
-    libraryDependencies ++= Seq(
-    )
-  ).dependsOn(wvletCore, wvletTest % "test->compile")
-
 
 lazy val wvletRest =
   Project(id = "wvlet-rest", base = file("wvlet-rest")).settings(
@@ -159,7 +137,7 @@ lazy val wvletCui =
     libraryDependencies ++= Seq(
       "org.xerial" %% "xerial-lens" % "3.5.0"    
     )
-  ) dependsOn(wvletCore, wvletLens, wvletTest % "test->compile")
+  ) dependsOn(wvletCore, wvletTest % "test->compile")
 
 lazy val wvletTest =
   Project(id = "wvlet-test", base = file("wvlet-test")).settings(
