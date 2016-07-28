@@ -1,5 +1,6 @@
 package wvlet.helix
 
+import java.io.{PrintStream, PrintWriter}
 import javax.inject.Inject
 
 import wvlet.log.LogSupport
@@ -11,14 +12,16 @@ case class ExecutorConfig(numThreads: Int)
 
 object ServiceMixinExample {
 
-  @service trait Printer {
+  trait Printer {
     def print(s: String): Unit
   }
 
-  new PrinterService2 {}
+  case class ConsoleConfig(out:PrintStream)
 
-  class ConsolePrinter extends Printer {
-    def print(s: String) {println(s)}
+  class ConsolePrinter(config:ConsoleConfig) extends Printer with LogSupport {
+    info(s"using config: ${config}")
+
+    def print(s: String) { config.out.println(s) }
   }
 
   class LogPrinter extends Printer with LogSupport {
@@ -59,7 +62,7 @@ object ServiceMixinExample {
     *
     * Pros:
     *   - Service reference (e.g., printer, fortune) can be scoped inside the trait.
-    *   - You can
+    *   - You can save boilerplate code
     * Cons:
     *   - If you use the same service multiple location, you need to repeat the same description in the user module
     *   - To reuse it in other traits, we still need to care about the naming conflict
@@ -72,7 +75,7 @@ object ServiceMixinExample {
   }
 
   /**
-    * Using Constructor for dependency injecetion (e.g., Guice)
+    * Using Constructor for dependency injection (e.g., Guice)
     *
     * Pros:
     *   - Close to the traditional OO programming style
@@ -84,7 +87,7 @@ object ServiceMixinExample {
     *   - RememenbOrder of constructor arguments
     * -
     */
-  class FortunePrinterAsClass @Inject()(printer: Printer, fortune: Fortune) {
+  class FortunePrinterAsClass @Inject() (printer: Printer, fortune: Fortune) {
     printer.print(fortune.generate)
   }
 
@@ -95,15 +98,18 @@ object ServiceMixinExample {
   */
 class HelixTest extends WvletSpec {
 
+  import wvlet.helix.ServiceMixinExample._
+
   "Helix" should {
 
     "instantiate class" in {
 
       val h = new Helix
-      //val t = h.build[ThreadExecutor]
+      h.bind[Printer].to[ConsolePrinter]
+      h.bind[ConsoleConfig].toInstance(ConsoleConfig(System.err))
 
-
-
+      val context = h.getContext
+      val m = context.weave[FortunePrinterMixin]
     }
 
   }
