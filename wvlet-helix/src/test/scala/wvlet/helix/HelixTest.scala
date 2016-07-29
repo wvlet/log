@@ -1,10 +1,11 @@
 package wvlet.helix
 
 import java.io.{PrintStream, PrintWriter}
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 import javax.inject.{Inject, Singleton}
 
 import wvlet.log.LogSupport
+import wvlet.obj.ObjectType
 import wvlet.test.WvletSpec
 
 import scala.util.Random
@@ -216,17 +217,24 @@ class HelixTest extends WvletSpec {
       new ClassWithContext(c)
     }
 
-    "manage lifecycle" in {
+    "support injection listener" in {
+      val h = new Helix
+      h.bind[EagerSingleton].asEagerSingleton
+      h.bind[ConsoleConfig].toInstance(ConsoleConfig(System.err))
 
-      pending
+      val counter = new AtomicInteger(0)
+      h.addListner(new ContextListener {
+        override def afterInjection(t: ObjectType, injectee: Any): Unit = {
+          counter.incrementAndGet()
+        }
+      })
+      val c = h.newContext
+      c.get[ConsoleConfig]
+      counter.get shouldBe 2
     }
 
     "have scope" in {
-      val h = new Helix
-
-
-      val c = h.newContext
-
+      pending
     }
 
 

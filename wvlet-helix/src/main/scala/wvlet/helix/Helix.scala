@@ -9,6 +9,7 @@ import wvlet.obj.{ObjectSchema, ObjectType, TypeUtil}
 
 import scala.reflect.ClassTag
 import scala.language.experimental.macros
+import scala.util.{Failure, Try}
 
 object Helix {
 
@@ -29,6 +30,7 @@ import Helix._
 class Helix extends LogSupport {
 
   private val binding = Seq.newBuilder[Binding]
+  private val listener = Seq.newBuilder[ContextListener]
 
   def bind[A](implicit a:ClassTag[A]) : Bind = {
     new Bind(this, ObjectType(a.runtimeClass))
@@ -39,8 +41,14 @@ class Helix extends LogSupport {
     this
   }
 
+  def addListner[A](l:ContextListener) : Helix = {
+    listener += l
+    this
+  }
+
+
   def newContext : Context = {
-    new ContextImpl(binding.result)
+    new ContextImpl(binding.result, listener.result())
   }
 
   def addBinding(b:Binding) : Helix = {
@@ -94,11 +102,11 @@ trait Context {
 
 trait ContextListener {
 
-  def afterInjection(t:ObjectType, injectee:AnyRef)
+  def afterInjection(t:ObjectType, injectee:Any)
 }
 
 
-private[helix] class ContextImpl(binding:Seq[Binding]) extends wvlet.helix.Context with LogSupport {
+private[helix] class ContextImpl(binding:Seq[Binding], listener:Seq[ContextListener]) extends wvlet.helix.Context with LogSupport {
 
   import scala.collection.JavaConversions._
   private lazy val singletonHolder : collection.mutable.Map[ObjectType, AnyRef] = new ConcurrentHashMap[ObjectType, AnyRef]()
@@ -107,6 +115,8 @@ private[helix] class ContextImpl(binding:Seq[Binding]) extends wvlet.helix.Conte
   binding.collect {
     case s@SingletonBinding(from, eager) if eager =>
       singletonHolder.getOrElseUpdate(from, buildInstance(from, Set(from)))
+    case InstanceBinding(from, obj) =>
+      reportToListener(from, obj)
   }
 
   /**
@@ -152,7 +162,17 @@ private[helix] class ContextImpl(binding:Seq[Binding]) extends wvlet.helix.Conte
       newInstance(p.valueType, seen)
     }
     info(s"Build a new instance for ${t}")
-    schema.constructor.newInstance(args).asInstanceOf[AnyRef]
+    val obj = schema.constructor.newInstance(args).asInstanceOf[AnyRef]
+    reportToListener(t, obj)
+    obj
+  }
+
+  private def reportToListener(t:ObjectType, obj:Any) {
+    listener.map(l => Try(l.afterInjection(t, obj))).collect {
+      case Failure(e) =>
+        error(s"Error in ContextListher", e)
+        throw e
+    }
   }
 
 }
