@@ -139,8 +139,8 @@ object ServiceMixinExample {
     val initializedTime = System.nanoTime()
   }
 
-  class ContextClass(c:Context) extends FortunePrinterMixin {
-
+  class ClassWithContext(val c:Context) extends FortunePrinterMixin with LogSupport {
+    //info(s"context ${c}") // we should access context since Scala will remove private field, which is never used
   }
 
 }
@@ -206,6 +206,14 @@ class HelixTest extends WvletSpec {
       intercept[HelixException] {
         c.weave[HasCycle]
       }
+    }
+
+    "Find a context in parameter" in {
+      val h = new Helix
+      h.bind[Printer].to[ConsolePrinter]
+      h.bind[ConsoleConfig].toInstance(ConsoleConfig(System.err))
+      val c = h.newContext
+      new ClassWithContext(c)
     }
 
     "manage lifecycle" in {

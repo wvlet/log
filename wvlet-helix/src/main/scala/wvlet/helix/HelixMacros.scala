@@ -1,6 +1,7 @@
 package wvlet.helix
 
 import wvlet.helix.HelixException.MISSING_CONTEXT
+import wvlet.log.LogSupport
 import wvlet.obj.{ObjectSchema, ObjectType}
 
 import scala.reflect.{macros => sm}
@@ -8,7 +9,7 @@ import scala.util.Try
 /**
   *
   */
-object HelixMacros {
+object HelixMacros extends LogSupport {
 
   def findContext[A](enclosingObj:A) : Context = {
     val cl = enclosingObj.getClass
@@ -19,27 +20,38 @@ object HelixMacros {
 
     // find val or def that returns wvlet.helix.Context
     val schema = ObjectSchema(cl)
-    schema
-    .methods
-    .find(x => returnsContext(x.valueType.rawType) && x.params.isEmpty)
-    .flatMap(contextGetter => Try(contextGetter.invoke(enclosingObj.asInstanceOf[AnyRef]).asInstanceOf[Context]).toOption)
-    .orElse{
+
+    def findContextFromMethods : Option[Context] = {
+      schema
+      .methods
+      .find(x => returnsContext(x.valueType.rawType) && x.params.isEmpty)
+      .flatMap{contextGetter =>
+        Try(contextGetter.invoke(enclosingObj.asInstanceOf[AnyRef]).asInstanceOf[Context]).toOption
+      }
+    }
+
+    def findContextFromParams : Option[Context] = {
       // Find parameters
       schema
       .parameters
       .find(p => returnsContext(p.valueType.rawType))
-      .flatMap(contextParam => Try(contextParam.get(enclosingObj).asInstanceOf[Context]).toOption)
+      .flatMap{ contextParam => Try(contextParam.get(enclosingObj).asInstanceOf[Context]).toOption}
     }
-    .getOrElse {
+
+    def findEmbeddedContext : Option[Context] = {
       // Find any embedded context
-      val m = cl.getDeclaredMethod("__helix_context")
-      if (m != null) {
-        m.invoke(enclosingObj).asInstanceOf[Context]
+      val m = Try(cl.getDeclaredMethod("__helix_context")).toOption
+      m.flatMap { m =>
+        Try(m.invoke(enclosingObj).asInstanceOf[Context]).toOption
       }
-      else {
-        error(s"No wvlet.helix.Context is found in the scope: ${ObjectType.of(cl)}")
-        throw new HelixException(MISSING_CONTEXT(ObjectType.of(cl)))
-      }
+    }
+
+    findContextFromMethods
+    .orElse(findContextFromParams)
+    .orElse(findEmbeddedContext)
+    .getOrElse {
+      error(s"No wvlet.helix.Context is found in the scope: ${ObjectType.of(cl)}")
+      throw new HelixException(MISSING_CONTEXT(ObjectType.of(cl)))
     }
   }
 
