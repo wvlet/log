@@ -17,7 +17,7 @@ object Helix {
   }
   case class ClassBinding(from:ObjectType, to:ObjectType) extends Binding
   case class InstanceBinding(from:ObjectType, to:Any) extends Binding
-  case class SingletonBinding(from:ObjectType) extends Binding
+  case class SingletonBinding(from:ObjectType, isEager:Boolean) extends Binding
 
 }
 
@@ -67,7 +67,11 @@ class Bind(h:Helix, from:ObjectType) extends LogSupport {
   }
 
   def asSingleton {
-    h.addBinding(SingletonBinding(from))
+    h.addBinding(SingletonBinding(from, false))
+  }
+
+  def asEagerSingleton {
+    h.addBinding(SingletonBinding(from, true))
   }
 }
 
@@ -97,7 +101,13 @@ trait ContextListener {
 private[helix] class ContextImpl(binding:Seq[Binding]) extends wvlet.helix.Context with LogSupport {
 
   import scala.collection.JavaConversions._
-  private val singletonHolder : collection.mutable.Map[ObjectType, AnyRef] = new ConcurrentHashMap[ObjectType, AnyRef]()
+  private lazy val singletonHolder : collection.mutable.Map[ObjectType, AnyRef] = new ConcurrentHashMap[ObjectType, AnyRef]()
+
+  // Initialize eager singleton
+  binding.collect {
+    case s@SingletonBinding(from, eager) if eager =>
+      singletonHolder.getOrElseUpdate(from, buildInstance(from, Set(from)))
+  }
 
   /**
     * Creates an instance of the given type A.
@@ -106,7 +116,6 @@ private[helix] class ContextImpl(binding:Seq[Binding]) extends wvlet.helix.Conte
     */
   def get[A](implicit ev:ClassTag[A]): A = {
     val cl = ev.runtimeClass
-    info(s"Get ${cl.getName}")
 
     newInstance(cl).asInstanceOf[A]
   }
@@ -116,6 +125,7 @@ private[helix] class ContextImpl(binding:Seq[Binding]) extends wvlet.helix.Conte
   }
 
   private def newInstance(t:ObjectType, seen:Set[ObjectType]) : AnyRef = {
+    info(s"Create an instance for ${t}")
     if(seen.contains(t)) {
       error(s"Found cyclic dependencies: ${seen}")
       throw new HelixException(CYCLIC_DEPENDENCY(seen))
@@ -125,7 +135,7 @@ private[helix] class ContextImpl(binding:Seq[Binding]) extends wvlet.helix.Conte
         newInstance(to, seen + from)
       case InstanceBinding(from, obj) =>
         obj
-      case SingletonBinding(from) => {
+      case SingletonBinding(from, eager) => {
         singletonHolder.getOrElseUpdate(from, buildInstance(from, seen + t))
       }
     }

@@ -8,7 +8,7 @@ object HelixMacros {
 
   def findContext[A](enclosingObj:A) : Context = {
     val cl = enclosingObj.getClass
-    val m = cl.getDeclaredMethod("_context")
+    val m = cl.getDeclaredMethod("__helix_context")
     val context = m.invoke(enclosingObj).asInstanceOf[Context]
     context
   }
@@ -19,7 +19,7 @@ object HelixMacros {
     c.Expr(
       q"""{
          val c = wvlet.helix.HelixMacros.findContext(this)
-        c.get(${ev})
+         c.get(${ev})
         }
       """
     )
@@ -32,7 +32,7 @@ object HelixMacros {
     c.Expr(
     q"""
        new $t {
-         protected def _context = ${c.prefix}
+         protected def __helix_context = ${c.prefix}
        }
       """
     )

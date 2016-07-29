@@ -1,6 +1,7 @@
 package wvlet.helix
 
 import java.io.{PrintStream, PrintWriter}
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.{Inject, Singleton}
 
 import wvlet.log.LogSupport
@@ -131,6 +132,13 @@ object ServiceMixinExample {
 
   case class A(b:B)
   case class B(a:A)
+
+
+  class EagerSingleton extends LogSupport {
+    info("initialized")
+    val initializedTime = System.nanoTime()
+  }
+
 }
 
 /**
@@ -150,10 +158,9 @@ class HelixTest extends WvletSpec {
 
       val context = h.newContext
       val m = context.weave[FortunePrinterMixin]
-
     }
 
-    "macwire example" in {
+    "test macwire example" in {
       //val w = new FortunePrinterWired {}
 
       new AppA {}
@@ -170,12 +177,24 @@ class HelixTest extends WvletSpec {
       a.heavy shouldEqual b.heavy
     }
 
+    "create singleton eagerly" in {
+      val start = System.nanoTime()
+      val h = new Helix
+      h.bind[EagerSingleton].asEagerSingleton
+      val c = h.newContext
+      c.get[HeavyObject]
+      val current = System.nanoTime()
+      val s = c.get[EagerSingleton]
+
+      s.initializedTime should be > start
+      s.initializedTime should be < current
+    }
+
     "found cyclic dependencies" in {
 
       trait HasCycle {
         val obj = inject[A]
       }
-
 
       val c = new Helix().newContext
 
