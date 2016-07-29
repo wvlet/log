@@ -139,6 +139,10 @@ object ServiceMixinExample {
     val initializedTime = System.nanoTime()
   }
 
+  class ContextClass(c:Context) extends FortunePrinterMixin {
+
+  }
+
 }
 
 /**
@@ -206,8 +210,17 @@ class HelixTest extends WvletSpec {
 
     "manage lifecycle" in {
 
+      pending
+    }
+
+    "have scope" in {
+      val h = new Helix
+
+
+      val c = h.newContext
 
     }
+
 
   }
 }

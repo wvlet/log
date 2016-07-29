@@ -88,7 +88,7 @@ trait Context {
     */
   def get[A:ClassTag] : A
 
-  def weave[A:ClassTag] : A = macro HelixMacros.weave[A]
+  def weave[A:ClassTag] : A = macro HelixMacros.weaveImpl[A]
 
 }
 
@@ -125,7 +125,7 @@ private[helix] class ContextImpl(binding:Seq[Binding]) extends wvlet.helix.Conte
   }
 
   private def newInstance(t:ObjectType, seen:Set[ObjectType]) : AnyRef = {
-    info(s"Create an instance for ${t}")
+    info(s"Search bindings for ${t}")
     if(seen.contains(t)) {
       error(s"Found cyclic dependencies: ${seen}")
       throw new HelixException(CYCLIC_DEPENDENCY(seen))
@@ -134,10 +134,11 @@ private[helix] class ContextImpl(binding:Seq[Binding]) extends wvlet.helix.Conte
       case ClassBinding(from, to) =>
         newInstance(to, seen + from)
       case InstanceBinding(from, obj) =>
+        info(s"Pre-defined instance is found for ${from}")
         obj
-      case SingletonBinding(from, eager) => {
+      case SingletonBinding(from, eager) =>
+        info(s"Find a singleton for ${from}")
         singletonHolder.getOrElseUpdate(from, buildInstance(from, seen + t))
-      }
     }
     .getOrElse {
       buildInstance(t, seen + t)
@@ -150,6 +151,7 @@ private[helix] class ContextImpl(binding:Seq[Binding]) extends wvlet.helix.Conte
     val args = for (p <- schema.constructor.params) yield {
       newInstance(p.valueType, seen)
     }
+    info(s"Build a new instance for ${t}")
     schema.constructor.newInstance(args).asInstanceOf[AnyRef]
   }
 
