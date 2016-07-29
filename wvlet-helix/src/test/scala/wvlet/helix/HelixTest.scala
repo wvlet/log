@@ -144,6 +144,18 @@ object ServiceMixinExample {
     //info(s"context ${c}") // we should access context since Scala will remove private field, which is never used
   }
 
+  case class HelloConfig(message:String)
+
+  class FactoryExample(val c:Context) {
+    val hello = inject { config:HelloConfig => s"${config.message}" }
+    val hello2 = inject { (c1:HelloConfig, c2:EagerSingleton) => s"${c1.message}:${c2.getClass.getSimpleName}" }
+
+    val helloFromProvider = inject(provider _)
+
+    def provider(config:HelloConfig) : String = config.message
+  }
+
+
 }
 
 /**
@@ -231,6 +243,18 @@ class HelixTest extends WvletSpec {
       val c = h.newContext
       c.get[ConsoleConfig]
       counter.get shouldBe 2
+    }
+
+    "support factory injection" in {
+      val h = new Helix
+      h.bind[HelloConfig].toInstance(HelloConfig("Hello Helix!"))
+      val c = h.newContext
+      val f = new FactoryExample(c)
+      f.hello shouldBe "Hello Helix!"
+      f.helloFromProvider shouldBe "Hello Helix!"
+
+      info(f.hello2)
+
     }
 
     "have scope" in {
