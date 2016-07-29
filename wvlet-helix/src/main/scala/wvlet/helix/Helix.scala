@@ -3,6 +3,7 @@ package wvlet.helix
 
 import java.util.concurrent.ConcurrentHashMap
 
+import wvlet.helix.HelixException.CYCLIC_DEPENDENCY
 import wvlet.log.LogSupport
 import wvlet.obj.{ObjectSchema, ObjectType, TypeUtil}
 
@@ -38,8 +39,8 @@ class Helix extends LogSupport {
     this
   }
 
-  def getContext : Context = {
-    new InternalContext(binding.result)
+  def newContext : Context = {
+    new ContextImpl(binding.result)
   }
 
   def addBinding(b:Binding) : Helix = {
@@ -71,7 +72,7 @@ class Bind(h:Helix, from:ObjectType) extends LogSupport {
 }
 
 /**
-  * Context tracks the dependencies of objects and use them to instanciate objects
+  * Context tracks the dependencies of objects and use them to instantiate objects
   */
 trait Context {
 
@@ -93,7 +94,7 @@ trait ContextListener {
 }
 
 
-private[helix] class InternalContext(binding:Seq[Binding]) extends wvlet.helix.Context with LogSupport {
+private[helix] class ContextImpl(binding:Seq[Binding]) extends wvlet.helix.Context with LogSupport {
 
   import scala.collection.JavaConversions._
   private val singletonHolder : collection.mutable.Map[ObjectType, AnyRef] = new ConcurrentHashMap[ObjectType, AnyRef]()
@@ -111,29 +112,33 @@ private[helix] class InternalContext(binding:Seq[Binding]) extends wvlet.helix.C
   }
 
   private def newInstance(cl:Class[_]) : AnyRef = {
-    newInstance(ObjectType(cl))
+    newInstance(ObjectType(cl), Set.empty)
   }
 
-  private def newInstance(t:ObjectType) : AnyRef = {
+  private def newInstance(t:ObjectType, seen:Set[ObjectType]) : AnyRef = {
+    if(seen.contains(t)) {
+      error(s"Found cyclic dependencies: ${seen}")
+      throw new HelixException(CYCLIC_DEPENDENCY(seen))
+    }
     val obj = binding.find(_.from == t).map {
       case ClassBinding(from, to) =>
-        newInstance(to)
+        newInstance(to, seen + from)
       case InstanceBinding(from, obj) =>
         obj
       case SingletonBinding(from) => {
-        singletonHolder.getOrElseUpdate(from, buildInstance(from))
+        singletonHolder.getOrElseUpdate(from, buildInstance(from, seen + t))
       }
     }
     .getOrElse {
-      buildInstance(t)
+      buildInstance(t, seen + t)
     }
     obj.asInstanceOf[AnyRef]
   }
 
-  private def buildInstance(t:ObjectType) : AnyRef = {
+  private def buildInstance(t:ObjectType, seen:Set[ObjectType]) : AnyRef = {
     val schema = ObjectSchema(t.rawType)
     val args = for (p <- schema.constructor.params) yield {
-      newInstance(p.valueType.rawType)
+      newInstance(p.valueType, seen)
     }
     schema.constructor.newInstance(args).asInstanceOf[AnyRef]
   }

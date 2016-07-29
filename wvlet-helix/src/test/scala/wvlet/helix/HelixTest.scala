@@ -128,6 +128,9 @@ object ServiceMixinExample {
 
   trait HelixAppB extends HeavySingletonService {
   }
+
+  case class A(b:B)
+  case class B(a:A)
 }
 
 /**
@@ -145,7 +148,7 @@ class HelixTest extends WvletSpec {
       h.bind[Printer].to[ConsolePrinter]
       h.bind[ConsoleConfig].toInstance(ConsoleConfig(System.err))
 
-      val context = h.getContext
+      val context = h.newContext
       val m = context.weave[FortunePrinterMixin]
 
     }
@@ -161,10 +164,25 @@ class HelixTest extends WvletSpec {
       val h = new Helix
       h.bind[HeavyObject].asSingleton
 
-      val c = h.getContext
+      val c = h.newContext
       val a = c.weave[HelixAppA]
       val b = c.weave[HelixAppB]
       a.heavy shouldEqual b.heavy
+    }
+
+    "found cyclic dependencies" in {
+
+      trait HasCycle {
+        val obj = inject[A]
+      }
+
+
+      val c = new Helix().newContext
+
+      warn(s"Running cyclic dependency test: A->B->A")
+      intercept[HelixException] {
+        c.weave[HasCycle]
+      }
     }
 
     "manage lifecycle" in {
