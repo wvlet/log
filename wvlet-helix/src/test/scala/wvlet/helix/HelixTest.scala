@@ -1,7 +1,7 @@
 package wvlet.helix
 
 import java.io.{PrintStream, PrintWriter}
-import javax.inject.Inject
+import javax.inject.{Inject, Singleton}
 
 import wvlet.log.LogSupport
 import wvlet.test.WvletSpec
@@ -51,7 +51,7 @@ object ServiceMixinExample {
     *   - Need to define XXXService boilerplate, which just has a val or def of the service object
     *   - Cannot change the variable name without defining additional XXXService trait
     *     - Need to care about variable naming conflict
-    *
+    *   - We don't know the missing dependenncy at compile time
     */
   trait FortunePrinterMixin extends PrinterService with FortuneService {
     printer.print(fortune.generate)
@@ -91,6 +91,43 @@ object ServiceMixinExample {
     printer.print(fortune.generate)
   }
 
+  import com.softwaremill.macwire._
+
+//  /**
+//    * Using macwire
+//    */
+//  trait FortunePrinterWired {
+//    lazy val printer = wire[Printer] // macwire cannot specify dynamic binding
+//    lazy val fortune = wire[Fortune]
+//
+//    printer.print(fortune.generate)
+//  }
+
+  class HeavyObject() extends LogSupport {
+    info(f"Heavy Process!!: ${this.hashCode()}%x")
+  }
+
+  trait HeavyService {
+    val heavy = wire[HeavyObject]
+  }
+
+  trait AppA extends HeavyService {
+
+  }
+
+  trait AppB extends HeavyService {
+
+  }
+
+  trait HeavySingletonService {
+    val heavy = inject[HeavyObject]
+  }
+
+  trait HelixAppA extends HeavySingletonService {
+  }
+
+  trait HelixAppB extends HeavySingletonService {
+  }
 }
 
 /**
@@ -110,6 +147,29 @@ class HelixTest extends WvletSpec {
 
       val context = h.getContext
       val m = context.weave[FortunePrinterMixin]
+
+    }
+
+    "macwire example" in {
+      //val w = new FortunePrinterWired {}
+
+      new AppA {}
+      new AppB {}
+    }
+
+    "create singleton" in {
+      val h = new Helix
+      h.bind[HeavyObject].asSingleton
+
+      val c = h.getContext
+      val a = c.weave[HelixAppA]
+      val b = c.weave[HelixAppB]
+      a.heavy shouldEqual b.heavy
+    }
+
+    "manage lifecycle" in {
+
+
     }
 
   }

@@ -299,6 +299,20 @@ class GenericType(override val rawType: Class[_], val genericTypes: Seq[ObjectTy
   override def isOption = rawType == classOf[Option[_]]
   override def isBooleanType = isOption && genericTypes(0).isBooleanType
   override def isGenericType = true
+
+  def canEqual(other: Any): Boolean = other.isInstanceOf[GenericType]
+
+  override def equals(other: Any): Boolean = other match {
+    case that: GenericType =>
+      (that canEqual this) &&
+        name == that.name
+    case _ => false
+  }
+
+  override def hashCode(): Int = {
+    val state = Seq(name)
+    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
+  }
 }
 
 case class MapType[A](cl: Class[A], keyType: ObjectType, valueType: ObjectType) extends GenericType(cl, Seq(keyType, valueType))

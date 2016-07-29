@@ -100,9 +100,9 @@ lazy val wvletHelix =
     description := "Helix pattern for weaving components in Scala",
     libraryDependencies ++= Seq(
       "javax.inject" % "javax.inject" % "1",
-      "org.scala-lang" % "scala-reflect" % scalaVersion.value
-    ),
-    addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+      "com.softwaremill.macwire" %% "macros" % "2.2.3" % "provided"
+    )
   ).dependsOn(wvletCore, wvletLog, wvletTest % "test->compile")
 
 
