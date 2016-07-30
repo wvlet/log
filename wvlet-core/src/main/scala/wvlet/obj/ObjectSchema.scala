@@ -103,6 +103,7 @@ object ObjectSchema extends LogSupport {
   def apply(cl: Class[_]): ObjectSchema = schemaTable.getOrElseUpdate(cl, createSchema(cl))
 
   private def createSchema(cl: Class[_]): ObjectSchema = {
+    trace(s"createSchema of ${cl}")
     new ObjectSchema(cl, parametersOf(cl))
   }
 
@@ -543,6 +544,7 @@ object ObjectSchema extends LogSupport {
       }
     }
 
+    trace(s"resolveClass: ${typeSignature}")
     name match {
       case "scala.Array" =>
         // primitive type array
@@ -552,7 +554,23 @@ object ObjectSchema extends LogSupport {
           case _ => Class.forName(s"[L${elementType.rawType.getName};")
         }
         ArrayType(arrayType, elementType)
-      case _ => toObjectType(findClass(name, typeSignature))
+      case "com.softwaremill.tagging.package.$at$at" =>
+        info(s"type signature: ${typeSignature.typeArgs}")
+        /**
+          * List(
+          *    TypeRefType(
+          *      ThisType(ClassSymbol(ServiceMixinExample, owner=wvlet.helix, flags=400, info=11 ,None)),
+          *      ClassSymbol(Fruit, owner=9, flags=40, info=485 ,None),List()),
+          *      TypeRefType(
+          *        ThisType(ClassSymbol(ServiceMixinExample, owner=wvlet.helix, flags=400, info=11 ,None)),
+          *        ClassSymbol(Apple, owner=9, flags=2000880, info=530 ,None), List()
+          *      )
+          *    )
+          */
+
+        null
+      case _ =>
+        toObjectType(findClass(name, typeSignature))
     }
 
   }

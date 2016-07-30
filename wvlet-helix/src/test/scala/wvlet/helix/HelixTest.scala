@@ -2,9 +2,11 @@ package wvlet.helix
 
 import java.io.{PrintStream, PrintWriter}
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 
-import wvlet.log.LogSupport
+import com.softwaremill.tagging.@@
+import wvlet.log.LogLevel.TRACE
+import wvlet.log.{LogSupport, Logger}
 import wvlet.obj.ObjectType
 import wvlet.test.WvletSpec
 
@@ -157,6 +159,22 @@ object ServiceMixinExample {
   }
 
 
+  case class Fruit(name:String)
+
+
+  trait Apple
+  trait Banana
+  trait Lemon
+
+  trait TaggedBinding {
+    val apple = inject[Fruit @@ Apple]
+    val banana = inject[Fruit @@ Banana]
+    val lemon = inject(lemonProvider _)
+
+    def lemonProvider(f:Fruit @@ Lemon) = f
+  }
+
+
 }
 
 /**
@@ -258,10 +276,25 @@ class HelixTest extends WvletSpec {
 
     }
 
-    "have scope" in {
-      pending
-    }
+    "support tagging" taggedAs("tag") in {
 
+      Logger.setDefaultLogLevel(TRACE)
+      try {
+        val h = new Helix
+        h.bind[Fruit @@ Apple].toInstance(Fruit("apple"))
+        h.bind[Fruit @@ Banana].toInstance(Fruit("banana"))
+        h.bind[Fruit @@ Lemon].toInstance(Fruit("lemon"))
+        val c = h.newContext
+        val tagged = c.build[TaggedBinding]
+        tagged.apple.name shouldBe ("apple")
+        tagged.banana.name shouldBe ("banana")
+        tagged.lemon.name shouldBe ("lemon")
+      }
+      catch {
+        case e : Throwable =>
+          error(e)
+      }
+    }
 
   }
 }

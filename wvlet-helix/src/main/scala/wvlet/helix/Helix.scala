@@ -23,6 +23,7 @@ object Helix {
 }
 
 import Helix._
+import com.softwaremill.tagging._
 
 /**
   *
@@ -33,12 +34,9 @@ class Helix extends LogSupport {
   private val listener = Seq.newBuilder[ContextListener]
 
   def bind[A](implicit a:ClassTag[A]) : Bind = {
-    new Bind(this, ObjectType(a.runtimeClass))
-  }
-
-  def bind[A](obj:A)(implicit a:ClassTag[A]) : Helix = {
-    binding += InstanceBinding(ObjectType(a.runtimeClass), obj)
-    this
+    info(s"Bind ${a}")
+    val b = new Bind(this, ObjectType(a.runtimeClass))
+    b
   }
 
   def addListner[A](l:ContextListener) : Helix = {
@@ -145,6 +143,7 @@ private[helix] class ContextImpl(binding:Seq[Binding], listener:Seq[ContextListe
     * @return object
     */
   def get[A](implicit ev:ClassTag[A]): A = {
+    info(s"Get ${ev}")
     val cl = ev.runtimeClass
 
     newInstance(cl).asInstanceOf[A]

@@ -101,6 +101,7 @@ lazy val wvletHelix =
     libraryDependencies ++= Seq(
       "javax.inject" % "javax.inject" % "1",
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+      "com.softwaremill.common" %% "tagging" % "1.0.0",
       "com.softwaremill.macwire" %% "macros" % "2.2.3" % "provided"
     )
   ).dependsOn(wvletCore, wvletLog, wvletTest % "test->compile")
