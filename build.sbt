@@ -94,17 +94,6 @@ lazy val wvletConfig =
     )
   ).dependsOn(wvletCore, wvletTest % "test->compile")
 
-lazy val wvletHelix =
-  Project(id = "wvlet-helix", base = file("wvlet-helix")).settings(
-    buildSettings,
-    description := "Helix pattern for weaving components in Scala",
-    libraryDependencies ++= Seq(
-      "javax.inject" % "javax.inject" % "1",
-      "org.scala-lang" % "scala-reflect" % scalaVersion.value
-    )
-  ).dependsOn(wvletCore, wvletLog, wvletTest % "test->compile")
-
-
 lazy val wvletCore =
   Project(id = "wvlet-core", base = file("wvlet-core")).settings(
     buildSettings,
