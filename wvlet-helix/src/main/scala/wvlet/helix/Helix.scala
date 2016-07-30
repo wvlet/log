@@ -145,7 +145,7 @@ private[helix] class ContextImpl(binding: Seq[Binding], listener: Seq[ContextLis
     * @return object
     */
   def get[A](implicit ev: ru.TypeTag[A]): A = {
-    info(s"Get ${ev}")
+    info(s"Get ${ev.tpe}")
     //ObjectType(ev)
     newInstance(ObjectType.of(ev.tpe), Set.empty).asInstanceOf[A]
   }

@@ -33,5 +33,4 @@ package object obj {
   implicit class AndTagger[T, U](t: T @@ U) {
     def andTaggedWith[V]: T @@ (U with V) = t.asInstanceOf[T @@ (U with V)]
   }
-
 }

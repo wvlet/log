@@ -96,33 +96,35 @@ object ServiceMixinExample {
     printer.print(fortune.generate)
   }
 
-  import com.softwaremill.macwire._
-
-//  /**
-//    * Using macwire
-//    */
-//  trait FortunePrinterWired {
-//    lazy val printer = wire[Printer] // macwire cannot specify dynamic binding
-//    lazy val fortune = wire[Fortune]
+//  import com.softwaremill.macwire._
 //
-//    printer.print(fortune.generate)
-//  }
+////  /**
+////    * Using macwire
+////    */
+////  trait FortunePrinterWired {
+////    lazy val printer = wire[Printer] // macwire cannot specify dynamic binding
+////    lazy val fortune = wire[Fortune]
+////
+////    printer.print(fortune.generate)
+////  }
+//
 
   class HeavyObject() extends LogSupport {
     info(f"Heavy Process!!: ${this.hashCode()}%x")
   }
 
-  trait HeavyService {
-    val heavy = wire[HeavyObject]
-  }
-
-  trait AppA extends HeavyService {
-
-  }
-
-  trait AppB extends HeavyService {
-
-  }
+//
+//  trait HeavyService {
+//    val heavy = wire[HeavyObject]
+//  }
+//
+//  trait AppA extends HeavyService {
+//
+//  }
+//
+//  trait AppB extends HeavyService {
+//
+//  }
 
   trait HeavySingletonService {
     val heavy = inject[HeavyObject]
@@ -196,12 +198,12 @@ class HelixTest extends WvletSpec {
       val m = context.build[FortunePrinterMixin]
     }
 
-    "test macwire example" in {
-      //val w = new FortunePrinterWired {}
-
-      new AppA {}
-      new AppB {}
-    }
+//    "test macwire example" in {
+//      //val w = new FortunePrinterWired {}
+//
+//      new AppA {}
+//      new AppB {}
+//    }
 
     "create singleton" in {
       val h = new Helix
