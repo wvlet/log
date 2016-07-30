@@ -48,7 +48,8 @@ object ServiceMixinExample {
   /**
     * Mix-in printer/fortune instances
     * Pros:
-    * -
+    *   - trait can be shared with multiple components
+    *   - xxxService trait can be a module
     * Cons:
     *   - Need to define XXXService boilerplate, which just has a val or def of the service object
     *   - Cannot change the variable name without defining additional XXXService trait
@@ -174,7 +175,7 @@ class HelixTest extends WvletSpec {
       h.bind[ConsoleConfig].toInstance(ConsoleConfig(System.err))
 
       val context = h.newContext
-      val m = context.weave[FortunePrinterMixin]
+      val m = context.build[FortunePrinterMixin]
     }
 
     "test macwire example" in {
@@ -186,18 +187,18 @@ class HelixTest extends WvletSpec {
 
     "create singleton" in {
       val h = new Helix
-      h.bind[HeavyObject].asSingleton
+      h.bind[HeavyObject].toSingleton
 
       val c = h.newContext
-      val a = c.weave[HelixAppA]
-      val b = c.weave[HelixAppB]
+      val a = c.build[HelixAppA]
+      val b = c.build[HelixAppB]
       a.heavy shouldEqual b.heavy
     }
 
     "create singleton eagerly" in {
       val start = System.nanoTime()
       val h = new Helix
-      h.bind[EagerSingleton].asEagerSingleton
+      h.bind[EagerSingleton].toEagerSingleton
       val c = h.newContext
       c.get[HeavyObject]
       val current = System.nanoTime()
@@ -217,7 +218,7 @@ class HelixTest extends WvletSpec {
 
       warn(s"Running cyclic dependency test: A->B->A")
       intercept[HelixException] {
-        c.weave[HasCycle]
+        c.build[HasCycle]
       }
     }
 
@@ -231,7 +232,7 @@ class HelixTest extends WvletSpec {
 
     "support injection listener" in {
       val h = new Helix
-      h.bind[EagerSingleton].asEagerSingleton
+      h.bind[EagerSingleton].toEagerSingleton
       h.bind[ConsoleConfig].toInstance(ConsoleConfig(System.err))
 
       val counter = new AtomicInteger(0)

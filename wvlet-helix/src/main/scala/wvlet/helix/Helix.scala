@@ -18,7 +18,7 @@ object Helix {
   }
   case class ClassBinding(from:ObjectType, to:ObjectType) extends Binding
   case class InstanceBinding(from:ObjectType, to:Any) extends Binding
-  case class SingletonBinding(from:ObjectType, isEager:Boolean) extends Binding
+  case class SingletonBinding(from:ObjectType, to:ObjectType, isEager:Boolean) extends Binding
 
 }
 
@@ -70,16 +70,36 @@ class Bind(h:Helix, from:ObjectType) extends LogSupport {
     }
   }
 
+  def toSingletonOf[B](implicit ev:ClassTag[B]) {
+    val to = ObjectType(ev.runtimeClass)
+    if(from == to) {
+      warn(s"Binding to the same type will be ignored: ${from.name}")
+    }
+    else {
+      h.addBinding(SingletonBinding(from, to, false))
+    }
+  }
+
+  def toEagerSingletonOf[B](implicit ev:ClassTag[B]) {
+    val to = ObjectType(ev.runtimeClass)
+    if(from == to) {
+      warn(s"Binding to the same type will be ignored: ${from.name}")
+    }
+    else {
+      h.addBinding(SingletonBinding(from, to, true))
+    }
+  }
+
   def toInstance(any:Any) {
     h.addBinding(InstanceBinding(from, any))
   }
 
-  def asSingleton {
-    h.addBinding(SingletonBinding(from, false))
+  def toSingleton {
+    h.addBinding(SingletonBinding(from, from, false))
   }
 
-  def asEagerSingleton {
-    h.addBinding(SingletonBinding(from, true))
+  def toEagerSingleton {
+    h.addBinding(SingletonBinding(from, from, true))
   }
 }
 
@@ -96,7 +116,7 @@ trait Context {
     */
   def get[A:ClassTag] : A
 
-  def weave[A:ClassTag] : A = macro HelixMacros.weaveImpl[A]
+  def build[A:ClassTag] : A = macro HelixMacros.weaveImpl[A]
 
 }
 
@@ -113,8 +133,8 @@ private[helix] class ContextImpl(binding:Seq[Binding], listener:Seq[ContextListe
 
   // Initialize eager singleton
   binding.collect {
-    case s@SingletonBinding(from, eager) if eager =>
-      singletonHolder.getOrElseUpdate(from, buildInstance(from, Set(from)))
+    case s@SingletonBinding(from, to, eager) if eager =>
+      singletonHolder.getOrElseUpdate(to, buildInstance(to, Set(to)))
     case InstanceBinding(from, obj) =>
       reportToListener(from, obj)
   }
@@ -146,9 +166,9 @@ private[helix] class ContextImpl(binding:Seq[Binding], listener:Seq[ContextListe
       case InstanceBinding(from, obj) =>
         info(s"Pre-defined instance is found for ${from}")
         obj
-      case SingletonBinding(from, eager) =>
-        info(s"Find a singleton for ${from}")
-        singletonHolder.getOrElseUpdate(from, buildInstance(from, seen + t))
+      case SingletonBinding(from, to, eager) =>
+        info(s"Find a singleton for ${to}")
+        singletonHolder.getOrElseUpdate(to, buildInstance(to, seen + t + to))
     }
     .getOrElse {
       buildInstance(t, seen + t)
