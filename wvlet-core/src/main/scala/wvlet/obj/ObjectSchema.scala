@@ -560,15 +560,18 @@ object ObjectSchema extends LogSupport {
           * List(
           *    TypeRefType(
           *      ThisType(ClassSymbol(ServiceMixinExample, owner=wvlet.helix, flags=400, info=11 ,None)),
-          *      ClassSymbol(Fruit, owner=9, flags=40, info=485 ,None),List()),
-          *      TypeRefType(
-          *        ThisType(ClassSymbol(ServiceMixinExample, owner=wvlet.helix, flags=400, info=11 ,None)),
-          *        ClassSymbol(Apple, owner=9, flags=2000880, info=530 ,None), List()
-          *      )
+          *      ClassSymbol(Fruit, owner=9, flags=40, info=485 ,None),
+          *      List()
+          *    ),
+          *    TypeRefType(
+          *      ThisType(ClassSymbol(ServiceMixinExample, owner=wvlet.helix, flags=400, info=11 ,None)),
+          *      ClassSymbol(Apple, owner=9, flags=2000880, info=530 ,None),
+          *      List()
           *    )
+          * )
           */
-
-        null
+        val taggedType = resolveTypeArg
+        TaggedObjectType(taggedType(0), taggedType(1))
       case _ =>
         toObjectType(findClass(name, typeSignature))
     }

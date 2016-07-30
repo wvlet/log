@@ -135,6 +135,11 @@ abstract class ObjectType(val rawType: Class[_]) extends Type {
   def isTextType: Boolean = false
 }
 
+case class TaggedObjectType(base:ObjectType, tagType:ObjectType) extends ObjectType(base.rawType) {
+
+}
+
+
 trait ValueObject extends ObjectType {
   override val name: String = this.getClass.getSimpleName.replaceAll("""\$""", "")
 }
