@@ -4,8 +4,8 @@ import java.io.{PrintStream, PrintWriter}
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 import javax.inject.{Inject, Named, Singleton}
 
-import com.softwaremill.tagging.@@
-import wvlet.log.LogLevel.TRACE
+import wvlet.obj.@@
+import wvlet.log.LogLevel.{DEBUG, TRACE}
 import wvlet.log.{LogSupport, Logger}
 import wvlet.obj.ObjectType
 import wvlet.test.WvletSpec
@@ -277,23 +277,17 @@ class HelixTest extends WvletSpec {
     }
 
     "support tagging" taggedAs("tag") in {
+      Logger.setDefaultLogLevel(DEBUG)
 
-      Logger.setDefaultLogLevel(TRACE)
-      try {
-        val h = new Helix
-        h.bind[Fruit @@ Apple].toInstance(Fruit("apple"))
-        h.bind[Fruit @@ Banana].toInstance(Fruit("banana"))
-        h.bind[Fruit @@ Lemon].toInstance(Fruit("lemon"))
-        val c = h.newContext
-        val tagged = c.build[TaggedBinding]
-        tagged.apple.name shouldBe ("apple")
-        tagged.banana.name shouldBe ("banana")
-        tagged.lemon.name shouldBe ("lemon")
-      }
-      catch {
-        case e : Throwable =>
-          error(e)
-      }
+      val h = new Helix
+      h.bind[Fruit @@ Apple].toInstance(Fruit("apple"))
+      h.bind[Fruit @@ Banana].toInstance(Fruit("banana"))
+      h.bind[Fruit @@ Lemon].toInstance(Fruit("lemon"))
+      val c = h.newContext
+      val tagged = c.build[TaggedBinding]
+      tagged.apple.name shouldBe ("apple")
+      tagged.banana.name shouldBe ("banana")
+      tagged.lemon.name shouldBe ("lemon")
     }
 
   }

@@ -527,7 +527,6 @@ object ObjectSchema extends LogSupport {
   }
 
   def resolveClass(typeSignature: TypeRefType): ObjectType = {
-
     val name = typeSignature.symbol.path
 
     def resolveTypeArg: Seq[ObjectType] = typeSignature.typeArgs.collect {
@@ -540,12 +539,17 @@ object ObjectSchema extends LogSupport {
         case TypeRefType(prefix, symbol, typeArgs) if typeArgs.isEmpty =>
           ObjectType.of(cl)
         case _ =>
-          GenericType(cl, resolveTypeArg)
+          val resolved = resolveTypeArg
+          if(resolved.size == 1 && resolved(0).isInstanceOf[TaggedObjectType]) {
+            resolved(0)
+          }
+          else {
+            GenericType(cl, resolved)
+          }
       }
     }
 
-    trace(s"resolveClass: ${typeSignature}")
-    name match {
+    val result = name match {
       case "scala.Array" =>
         // primitive type array
         val elementType = resolveTypeArg.head
@@ -554,8 +558,9 @@ object ObjectSchema extends LogSupport {
           case _ => Class.forName(s"[L${elementType.rawType.getName};")
         }
         ArrayType(arrayType, elementType)
-      case "com.softwaremill.tagging.package.$at$at" =>
-        info(s"type signature: ${typeSignature.typeArgs}")
+      case "wvlet.obj.package.$at$at" =>
+        // Binding for tagged type
+        trace(s"type signature: ${typeSignature.typeArgs}")
         /**
           * List(
           *    TypeRefType(
@@ -571,11 +576,12 @@ object ObjectSchema extends LogSupport {
           * )
           */
         val taggedType = resolveTypeArg
-        TaggedObjectType(taggedType(0), taggedType(1))
+        TaggedObjectType(taggedType(0).rawType, taggedType(0), taggedType(1))
       case _ =>
         toObjectType(findClass(name, typeSignature))
     }
-
+    trace(s"resolveClass: ${typeSignature} => ${result}")
+    result
   }
 
 }

@@ -1,66 +1,66 @@
 package wvlet.helix
 
-
 import java.util.concurrent.ConcurrentHashMap
 
 import wvlet.helix.HelixException.CYCLIC_DEPENDENCY
 import wvlet.log.LogSupport
-import wvlet.obj.{ObjectSchema, ObjectType, TypeUtil}
+import wvlet.obj.{ObjectSchema, ObjectType}
 
-import scala.reflect.ClassTag
 import scala.language.experimental.macros
+import scala.reflect.ClassTag
 import scala.util.{Failure, Try}
 
 object Helix {
 
   sealed trait Binding {
-    def from :  ObjectType
+    def from: ObjectType
   }
-  case class ClassBinding(from:ObjectType, to:ObjectType) extends Binding
-  case class InstanceBinding(from:ObjectType, to:Any) extends Binding
-  case class SingletonBinding(from:ObjectType, to:ObjectType, isEager:Boolean) extends Binding
+  case class ClassBinding(from: ObjectType, to: ObjectType) extends Binding
+  case class InstanceBinding(from: ObjectType, to: Any) extends Binding
+  case class SingletonBinding(from: ObjectType, to: ObjectType, isEager: Boolean) extends Binding
 
 }
 
-import Helix._
-import com.softwaremill.tagging._
+import wvlet.helix.Helix._
+
+import scala.reflect.runtime.{universe => ru}
 
 /**
   *
   */
 class Helix extends LogSupport {
 
-  private val binding = Seq.newBuilder[Binding]
+  private val binding  = Seq.newBuilder[Binding]
   private val listener = Seq.newBuilder[ContextListener]
 
-  def bind[A](implicit a:ClassTag[A]) : Bind = {
-    info(s"Bind ${a}")
-    val b = new Bind(this, ObjectType(a.runtimeClass))
+  def bind[A](implicit a: ru.TypeTag[A]): Bind = {
+    val t = ObjectType.of(a.tpe)
+    info(s"Bind ${t.name} ${t.getClass}")
+    val b = new Bind(this, t)
     b
   }
 
-  def addListner[A](l:ContextListener) : Helix = {
+  def addListner[A](l: ContextListener): Helix = {
     listener += l
     this
   }
 
-
-  def newContext : Context = {
+  def newContext: Context = {
     new ContextImpl(binding.result, listener.result())
   }
 
-  def addBinding(b:Binding) : Helix = {
+  def addBinding(b: Binding): Helix = {
+    debug(s"Add binding: $b")
     binding += b
     this
   }
 }
 
+class Bind(h: Helix, from: ObjectType) extends LogSupport {
 
-class Bind(h:Helix, from:ObjectType) extends LogSupport {
-
-  def to[B](implicit ev:ClassTag[B]) {
-    val to = ObjectType(ev.runtimeClass)
-    if(from == to) {
+  def to[B](implicit ev: ru.TypeTag[B]) {
+    val to = ObjectType.of(ev.tpe)
+    if (from == to) {
       warn(s"Binding to the same type will be ignored: ${from.name}")
     }
     else {
@@ -68,9 +68,9 @@ class Bind(h:Helix, from:ObjectType) extends LogSupport {
     }
   }
 
-  def toSingletonOf[B](implicit ev:ClassTag[B]) {
-    val to = ObjectType(ev.runtimeClass)
-    if(from == to) {
+  def toSingletonOf[B](implicit ev: ru.TypeTag[B]) {
+    val to = ObjectType.of(ev.tpe)
+    if (from == to) {
       warn(s"Binding to the same type will be ignored: ${from.name}")
     }
     else {
@@ -78,9 +78,9 @@ class Bind(h:Helix, from:ObjectType) extends LogSupport {
     }
   }
 
-  def toEagerSingletonOf[B](implicit ev:ClassTag[B]) {
-    val to = ObjectType(ev.runtimeClass)
-    if(from == to) {
+  def toEagerSingletonOf[B](implicit ev: ru.TypeTag[B]) {
+    val to = ObjectType.of(ev.tpe)
+    if (from == to) {
       warn(s"Binding to the same type will be ignored: ${from.name}")
     }
     else {
@@ -88,7 +88,7 @@ class Bind(h:Helix, from:ObjectType) extends LogSupport {
     }
   }
 
-  def toInstance(any:Any) {
+  def toInstance(any: Any) {
     h.addBinding(InstanceBinding(from, any))
   }
 
@@ -101,6 +101,8 @@ class Bind(h:Helix, from:ObjectType) extends LogSupport {
   }
 }
 
+import scala.reflect.runtime.{universe => ru}
+
 /**
   * Context tracks the dependencies of objects and use them to instantiate objects
   */
@@ -112,22 +114,22 @@ trait Context {
     * @tparam A
     * @return object
     */
-  def get[A:ClassTag] : A
+  def get[A: ru.TypeTag]: A
 
-  def build[A:ClassTag] : A = macro HelixMacros.weaveImpl[A]
+  def build[A: ClassTag]: A = macro HelixMacros.weaveImpl[A]
 
 }
 
 trait ContextListener {
 
-  def afterInjection(t:ObjectType, injectee:Any)
+  def afterInjection(t: ObjectType, injectee: Any)
 }
 
-
-private[helix] class ContextImpl(binding:Seq[Binding], listener:Seq[ContextListener]) extends wvlet.helix.Context with LogSupport {
+private[helix] class ContextImpl(binding: Seq[Binding], listener: Seq[ContextListener]) extends wvlet.helix.Context with LogSupport {
 
   import scala.collection.JavaConversions._
-  private lazy val singletonHolder : collection.mutable.Map[ObjectType, AnyRef] = new ConcurrentHashMap[ObjectType, AnyRef]()
+
+  private lazy val singletonHolder: collection.mutable.Map[ObjectType, AnyRef] = new ConcurrentHashMap[ObjectType, AnyRef]()
 
   // Initialize eager singleton
   binding.collect {
@@ -142,20 +144,15 @@ private[helix] class ContextImpl(binding:Seq[Binding], listener:Seq[ContextListe
     *
     * @return object
     */
-  def get[A](implicit ev:ClassTag[A]): A = {
+  def get[A](implicit ev: ru.TypeTag[A]): A = {
     info(s"Get ${ev}")
-    val cl = ev.runtimeClass
-
-    newInstance(cl).asInstanceOf[A]
+    //ObjectType(ev)
+    newInstance(ObjectType.of(ev.tpe), Set.empty).asInstanceOf[A]
   }
 
-  private def newInstance(cl:Class[_]) : AnyRef = {
-    newInstance(ObjectType(cl), Set.empty)
-  }
-
-  private def newInstance(t:ObjectType, seen:Set[ObjectType]) : AnyRef = {
+  private def newInstance(t: ObjectType, seen: Set[ObjectType]): AnyRef = {
     info(s"Search bindings for ${t}")
-    if(seen.contains(t)) {
+    if (seen.contains(t)) {
       error(s"Found cyclic dependencies: ${seen}")
       throw new HelixException(CYCLIC_DEPENDENCY(seen))
     }
@@ -169,13 +166,13 @@ private[helix] class ContextImpl(binding:Seq[Binding], listener:Seq[ContextListe
         info(s"Find a singleton for ${to}")
         singletonHolder.getOrElseUpdate(to, buildInstance(to, seen + t + to))
     }
-    .getOrElse {
-      buildInstance(t, seen + t)
-    }
+              .getOrElse {
+                buildInstance(t, seen + t)
+              }
     obj.asInstanceOf[AnyRef]
   }
 
-  private def buildInstance(t:ObjectType, seen:Set[ObjectType]) : AnyRef = {
+  private def buildInstance(t: ObjectType, seen: Set[ObjectType]): AnyRef = {
     val schema = ObjectSchema(t.rawType)
     val args = for (p <- schema.constructor.params) yield {
       newInstance(p.valueType, seen)
@@ -186,7 +183,7 @@ private[helix] class ContextImpl(binding:Seq[Binding], listener:Seq[ContextListe
     obj
   }
 
-  private def reportToListener(t:ObjectType, obj:Any) {
+  private def reportToListener(t: ObjectType, obj: Any) {
     listener.map(l => Try(l.afterInjection(t, obj))).collect {
       case Failure(e) =>
         error(s"Error in ContextListher", e)

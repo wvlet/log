@@ -11,7 +11,7 @@ import scala.reflect.runtime.{universe => ru}
 
 object ObjectType extends LogSupport {
 
-  private[obj] def mirror = ru.runtimeMirror(Thread.currentThread.getContextClassLoader)
+  private[wvlet] def mirror = ru.runtimeMirror(Thread.currentThread.getContextClassLoader)
 
   private[obj] val typeTable = mutable.WeakHashMap[ru.Type, ObjectType]()
 
@@ -25,7 +25,6 @@ object ObjectType extends LogSupport {
 
   def of(tpe: ru.Type): ObjectType = {
     def resolveType = {
-      trace(f"ObjectType.of(${ru.showRaw(tpe)})")
       val m =
         (primitiveMatcher orElse
           textMatcher orElse
@@ -68,6 +67,22 @@ object ObjectType extends LogSupport {
 
   def typeRefMatcher: PartialFunction[ru.Type, ObjectType] = {
     case t if t =:= typeOf[scala.Any] => AnyRefType
+    case tagged@TypeRef(_ ,tn, typeArgs) if tn.fullName == "wvlet.obj.$at$at" =>
+      /***
+        *  TypeRef(
+        *    SingleType(
+        *      SingleType(
+        *        SingleType(SingleType(ThisType(<root>), com), com.softwaremill),
+        *        com.softwaremill.tagging),
+        *      com.softwaremill.tagging.package),
+        *    TypeName("$at$at"), List(TypeRef(SingleType(SingleType(SingleType(ThisType(<root>), wvlet), wvlet.helix), wvlet.helix.ServiceMixinExample), wvlet.helix.ServiceMixinExample.Fruit, List()), TypeRef(SingleType(SingleType(SingleType(ThisType(<root>), wvlet), wvlet.helix), wvlet.helix.ServiceMixinExample), wvlet.helix.ServiceMixinExample.Apple, List())))
+        */
+      val cl = resolveClass(tagged)
+      val resolved = typeArgs.map(apply(_))
+      if(resolved.size != 2) {
+        throw new IllegalStateException(s"Tagged type size should be 2: ${tagged}")
+      }
+      TaggedObjectType(cl, resolved(0), resolved(1))
     case tpe@TypeRef(pre, symbol, typeArgs) =>
       val cl = resolveClass(tpe)
       if (typeArgs.isEmpty) {
@@ -135,8 +150,8 @@ abstract class ObjectType(val rawType: Class[_]) extends Type {
   def isTextType: Boolean = false
 }
 
-case class TaggedObjectType(base:ObjectType, tagType:ObjectType) extends ObjectType(base.rawType) {
-
+case class TaggedObjectType(override val rawType:Class[_], base:ObjectType, tagType:ObjectType) extends ObjectType(rawType) {
+  override val name : String = s"${base.name}@@${tagType.name}"
 }
 
 
