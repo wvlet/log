@@ -66,6 +66,9 @@ object JMXAgent extends LogSupport {
         None
     }
   }
+
+  def start(registryPort:Int) = new JMXAgent(JMXConfig(registryPort=Some(registryPort)))
+
 }
 
 trait JMXMBeanServerService {
