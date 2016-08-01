@@ -66,7 +66,10 @@ object InjectMacros extends LogSupport {
     val t = ev.tpe.typeArgs(0)
     c.Expr(
       q"""
-       getContext(classOf[$t]).getOrEles {
+       wvlet.inject.InjectMacros.getContext(classOf[$t]) match {
+        case Some(c) =>
+           c.get(classOf[$t])
+        case None =>
           new $t { protected def __inject_context = ${c.prefix} }
        }
       """

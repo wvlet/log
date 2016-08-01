@@ -173,12 +173,12 @@ object ServiceMixinExample {
 
 }
 
+import ServiceMixinExample._
+
 /**
   *
   */
 class InjectTest extends WvletSpec {
-
-  import wvlet.inject.ServiceMixinExample._
 
   "Helix" should {
 

@@ -1,9 +1,9 @@
-package wvlet.obj
+package wvlet.core.tablet
 
 import org.msgpack.core.MessagePack
 import wvlet.core._
-import wvlet.core.tablet._
 import wvlet.log.LogSupport
+import wvlet.obj.{ObjectSchema, Primitive, TextType, TypeUtil}
 
 import scala.reflect.ClassTag
 

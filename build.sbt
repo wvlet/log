@@ -62,7 +62,7 @@ lazy val wvlet =
     publish := {},
     publishLocal := {},
     packExclude := Seq("wvlet")
-  ).aggregate(wvletCore, wvletTest, wvletLog, wvletConfig, wvletJmx) //, wvletLens, wvletJdbc, wvletDataframe, wvletRest, wvletTest, wvletCui)
+  ).aggregate(wvletCore, wvletObj, wvletInject, wvletTest, wvletLog, wvletConfig, wvletJmx) //, wvletLens, wvletJdbc, wvletDataframe, wvletRest, wvletTest, wvletCui)
 
 lazy val wvletLog =
   Project(id = "wvlet-log", base = file("wvlet-log")).settings(
@@ -78,7 +78,7 @@ lazy val wvletLog =
 lazy val wvletJmx =
   Project(id = "wvlet-jmx", base = file("wvlet-jmx")).settings(
     buildSettings,
-    description := "Handy logging wrapper for java.util.logging",
+    description := "wvlet handy logging wrapper for java.util.logging",
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value
     )
@@ -87,24 +87,38 @@ lazy val wvletJmx =
 lazy val wvletConfig =
   Project(id = "wvlet-config", base = file("wvlet-config")).settings(
     buildSettings,
-    description := "Configuration module",
+    description := "wvlet configuration module",
     libraryDependencies ++= Seq(
-      "org.yaml" % "snakeyaml" % "1.14",
-      "org.xerial" %% "xerial-lens" % "3.5.0"
+      "org.yaml" % "snakeyaml" % "1.14"
     )
-  ).dependsOn(wvletCore, wvletTest % "test->compile")
+  ).dependsOn(wvletObj, wvletCore, wvletTest % "test->compile")
 
 lazy val wvletCore =
   Project(id = "wvlet-core", base = file("wvlet-core")).settings(
     buildSettings,
     description := "wvlet core module",
     libraryDependencies ++= Seq(
-      "org.xerial" %% "xerial-core" % "3.5.0",
-      "org.scala-lang" % "scalap" % scalaVersion.value,
-      "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "org.msgpack" % "msgpack-core" % "0.8.7"
     )
+  ).dependsOn(wvletLog, wvletObj, wvletTest % "test->compile")
+
+lazy val wvletObj =
+  Project(id = "wvlet-obj", base = file("wvlet-obj")).settings(
+    buildSettings,
+    description := "wvlet object schema inspector",
+    libraryDependencies ++= Seq(
+      "org.scala-lang" % "scalap" % scalaVersion.value,
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value
+    )
   ).dependsOn(wvletLog, wvletTest % "test->compile")
+
+lazy val wvletInject =
+  Project(id = "wvlet-inject", base = file("wvlet-inject")).settings(
+    buildSettings,
+    description := "wvlet dependency injection library",
+    libraryDependencies ++= Seq(
+    )
+  ).dependsOn(wvletObj, wvletLog, wvletTest % "test->compile")
 
 lazy val wvletRest =
   Project(id = "wvlet-rest", base = file("wvlet-rest")).settings(
@@ -134,7 +148,6 @@ lazy val wvletTest =
     libraryDependencies ++= Seq(
       "org.xerial" %% "xerial-core" % "3.5.0",
       "org.scalatest" %% "scalatest" % "2.2.+",
-      "org.scalacheck" %% "scalacheck" % "1.11.4",
-      "ch.qos.logback" % "logback-classic" % "1.1.2"
+      "org.scalacheck" %% "scalacheck" % "1.11.4"
     )
   ) dependsOn(wvletLog)
