@@ -67,7 +67,7 @@ object ObjectType extends LogSupport {
 
   def typeRefMatcher: PartialFunction[ru.Type, ObjectType] = {
     case t if t =:= typeOf[scala.Any] => AnyRefType
-    case tagged@TypeRef(_ ,tn, typeArgs) if tn.fullName == "wvlet.obj.$at$at" =>
+    case tagged@TypeRef(_ ,tn, typeArgs) if tn.fullName == "wvlet.obj.tag.$at$at" =>
       /***
         *  TypeRef(
         *    SingleType(

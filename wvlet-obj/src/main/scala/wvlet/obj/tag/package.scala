@@ -1,4 +1,4 @@
-package wvlet
+package wvlet.obj
 
 /**
   * Copied from com.softwaremill.tagging
@@ -23,7 +23,7 @@ package wvlet
   *
   * Original idea by Miles Sabin, see: https://gist.github.com/milessabin/89c9b47a91017973a35f
   */
-package object obj {
+package object tag {
   type Tag[+U] = {type Tag <: U}
   type @@[T, +U] = T with Tag[U]
   type Tagged[T, +U] = T with Tag[U]

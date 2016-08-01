@@ -558,7 +558,7 @@ object ObjectSchema extends LogSupport {
           case _ => Class.forName(s"[L${elementType.rawType.getName};")
         }
         ArrayType(arrayType, elementType)
-      case "wvlet.obj.package.$at$at" =>
+      case "wvlet.obj.tag.package.$at$at" =>
         // Binding for tagged type
         trace(s"type signature: ${typeSignature.typeArgs}")
         /**
