@@ -1,6 +1,6 @@
 Release Notes
 ====
-2016-08 0.11
+2016-08-01 0.11
  * Add wvlet-inject for dependency injection
  * Reorganized modules into wvlet-core, wvlet-obj, wvlet-injext
 
