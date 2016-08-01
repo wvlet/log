@@ -30,14 +30,19 @@ detailed types (e.g., type parameters used in Generics: e.g., `String` in `List[
 
 ## Applications
 
+### Dependency injection
 wvlet-obj is highly utilized in [wvlet-inject](../wvlet-inject), [wvlet-jmx](../wvlet-jmx) to build programs by inspecting the shape of objects.
 
 For example, in the following code wvlet-inject finds the constructor of `MyApp` class, then list dependencies (`Module1`, `Module2`, ...) that are necessary to build an `MyApp` instance:
 ```scala
 class MyApp(m1:Module1, m2:Module2)
 
-val p = inject[MyApp]
+trait AppMain {
+  val p = inject[MyApp]
+}
 ```
+
+### Runtime code generation
 
 In wvlet-jmx, `@JMX` annotation is used to register JMX parameter to JMX registry server so that we can monitor the behavior of the application outside JVM.
 You only need to aad `@JMX` annotation to start collecting JMX metrics:
@@ -52,4 +57,22 @@ class MonitoringApp {
 
 wvlet-jmx checks the object schema of `Metrics` and registers its parameters to JMX registry.
 
+## Object mapping
 
+[wvlet-config](../wvlet-config) reads Yaml files and binds the data into objects with wvlet-obj.
+
+**config.yml**
+```
+default:
+   timeout-millis: 100
+   max-connection: 250
+
+```
+
+You can read this yaml file as follows:
+```
+case class ConnectionConfig(timeoutMillis:Long, maxConnection:Int)
+val config = YamlReader.load[ConnectionConfig]("config.yml", "default")
+```
+
+Internally wvlet-obj inspects ConnectionConfig parameterss, and builds the config object by mapping property values written in the Yaml file.
