@@ -31,7 +31,7 @@ trait JMXRegistry extends JMXMBeanServerService with LogSupport {
     synchronized {
       registeredMBean += objectName
     }
-    info(s"Registered mbean: ${mbean}")
+    debug(s"Registered mbean: ${mbean}")
   }
 
   def unregister(name: String) {
