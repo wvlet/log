@@ -91,7 +91,7 @@ lazy val wvletConfig =
     libraryDependencies ++= Seq(
       "org.yaml" % "snakeyaml" % "1.14"
     )
-  ).dependsOn(wvletObj, wvletCore, wvletTest % "test->compile")
+  ).dependsOn(wvletObj, wvletInject, wvletTest % "test->compile")
 
 lazy val wvletCore =
   Project(id = "wvlet-core", base = file("wvlet-core")).settings(
