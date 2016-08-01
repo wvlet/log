@@ -17,4 +17,5 @@ wvlet can:
 | wvlet-obj   |  Object schema inspection library   |
 | wvlet-inject      | Dependency injection library     |
 | wvlet-jmx   | JMX utility|
+| wvlet-config    | Configuration loader from Yaml          |
 
