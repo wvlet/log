@@ -1,6 +1,6 @@
-package wvlet.helix
+package wvlet.inject
 
-import wvlet.helix.HelixException.ErrorType
+import wvlet.inject.HelixException.ErrorType
 import wvlet.obj.ObjectType
 
 object HelixException {

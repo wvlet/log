@@ -1,8 +1,8 @@
-package wvlet.helix
+package wvlet.inject
 
 import java.util.concurrent.ConcurrentHashMap
 
-import wvlet.helix.HelixException.CYCLIC_DEPENDENCY
+import wvlet.inject.HelixException.CYCLIC_DEPENDENCY
 import wvlet.log.LogSupport
 import wvlet.obj.{ObjectSchema, ObjectType}
 
@@ -10,7 +10,7 @@ import scala.language.experimental.macros
 import scala.reflect.ClassTag
 import scala.util.{Failure, Try}
 
-object Helix {
+object Inject {
 
   sealed trait Binding {
     def from: ObjectType
@@ -21,14 +21,14 @@ object Helix {
 
 }
 
-import wvlet.helix.Helix._
+import wvlet.inject.Inject._
 
 import scala.reflect.runtime.{universe => ru}
 
 /**
   *
   */
-class Helix extends LogSupport {
+class Inject extends LogSupport {
 
   private val binding  = Seq.newBuilder[Binding]
   private val listener = Seq.newBuilder[ContextListener]
@@ -40,7 +40,7 @@ class Helix extends LogSupport {
     b
   }
 
-  def addListner[A](l: ContextListener): Helix = {
+  def addListner[A](l: ContextListener): Inject = {
     listener += l
     this
   }
@@ -49,14 +49,14 @@ class Helix extends LogSupport {
     new ContextImpl(binding.result, listener.result())
   }
 
-  def addBinding(b: Binding): Helix = {
+  def addBinding(b: Binding): Inject = {
     debug(s"Add binding: $b")
     binding += b
     this
   }
 }
 
-class Bind(h: Helix, from: ObjectType) extends LogSupport {
+class Bind(h: Inject, from: ObjectType) extends LogSupport {
 
   def to[B](implicit ev: ru.TypeTag[B]) {
     val to = ObjectType.of(ev.tpe)
@@ -116,7 +116,7 @@ trait Context {
     */
   def get[A: ru.TypeTag]: A
 
-  def build[A: ClassTag]: A = macro HelixMacros.weaveImpl[A]
+  def build[A: ClassTag]: A = macro InjectMacros.buildImpl[A]
 
 }
 
@@ -125,7 +125,7 @@ trait ContextListener {
   def afterInjection(t: ObjectType, injectee: Any)
 }
 
-private[helix] class ContextImpl(binding: Seq[Binding], listener: Seq[ContextListener]) extends wvlet.helix.Context with LogSupport {
+private[inject] class ContextImpl(binding: Seq[Binding], listener: Seq[ContextListener]) extends wvlet.inject.Context with LogSupport {
 
   import scala.collection.JavaConversions._
 

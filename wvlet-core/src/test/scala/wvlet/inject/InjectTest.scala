@@ -1,13 +1,11 @@
-package wvlet.helix
+package wvlet.inject
 
-import java.io.{PrintStream, PrintWriter}
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
-import javax.inject.{Inject, Named, Singleton}
+import java.io.PrintStream
+import java.util.concurrent.atomic.AtomicInteger
 
-import wvlet.obj.@@
-import wvlet.log.LogLevel.{DEBUG, TRACE}
+import wvlet.log.LogLevel.DEBUG
 import wvlet.log.{LogSupport, Logger}
-import wvlet.obj.ObjectType
+import wvlet.obj.{@@, ObjectType}
 import wvlet.test.WvletSpec
 
 import scala.util.Random
@@ -20,12 +18,12 @@ object ServiceMixinExample {
     def print(s: String): Unit
   }
 
-  case class ConsoleConfig(out:PrintStream)
+  case class ConsoleConfig(out: PrintStream)
 
-  class ConsolePrinter(config:ConsoleConfig) extends Printer with LogSupport {
+  class ConsolePrinter(config: ConsoleConfig) extends Printer with LogSupport {
     info(s"using config: ${config}")
 
-    def print(s: String) { config.out.println(s) }
+    def print(s: String) {config.out.println(s)}
   }
 
   class LogPrinter extends Printer with LogSupport {
@@ -92,7 +90,7 @@ object ServiceMixinExample {
     *   - RememenbOrder of constructor arguments
     * -
     */
-  class FortunePrinterAsClass @Inject() (printer: Printer, fortune: Fortune) {
+  class FortunePrinterAsClass @Inject()(printer: Printer, fortune: Fortune) {
     printer.print(fortune.generate)
   }
 
@@ -136,61 +134,57 @@ object ServiceMixinExample {
   trait HelixAppB extends HeavySingletonService {
   }
 
-  case class A(b:B)
-  case class B(a:A)
-
+  case class A(b: B)
+  case class B(a: A)
 
   class EagerSingleton extends LogSupport {
     info("initialized")
     val initializedTime = System.nanoTime()
   }
 
-  class ClassWithContext(val c:Context) extends FortunePrinterMixin with LogSupport {
+  class ClassWithContext(val c: Context) extends FortunePrinterMixin with LogSupport {
     //info(s"context ${c}") // we should access context since Scala will remove private field, which is never used
   }
 
-  case class HelloConfig(message:String)
+  case class HelloConfig(message: String)
 
-  class FactoryExample(val c:Context) {
-    val hello = inject { config:HelloConfig => s"${config.message}" }
-    val hello2 = inject { (c1:HelloConfig, c2:EagerSingleton) => s"${c1.message}:${c2.getClass.getSimpleName}" }
+  class FactoryExample(val c: Context) {
+    val hello  = inject { config: HelloConfig => s"${config.message}" }
+    val hello2 = inject { (c1: HelloConfig, c2: EagerSingleton) => s"${c1.message}:${c2.getClass.getSimpleName}" }
 
     val helloFromProvider = inject(provider _)
 
-    def provider(config:HelloConfig) : String = config.message
+    def provider(config: HelloConfig): String = config.message
   }
 
-
-  case class Fruit(name:String)
-
+  case class Fruit(name: String)
 
   trait Apple
   trait Banana
   trait Lemon
 
   trait TaggedBinding {
-    val apple = inject[Fruit @@ Apple]
+    val apple  = inject[Fruit @@ Apple]
     val banana = inject[Fruit @@ Banana]
-    val lemon = inject(lemonProvider _)
+    val lemon  = inject(lemonProvider _)
 
-    def lemonProvider(f:Fruit @@ Lemon) = f
+    def lemonProvider(f: Fruit @@ Lemon) = f
   }
-
 
 }
 
 /**
   *
   */
-class HelixTest extends WvletSpec {
+class InjectTest extends WvletSpec {
 
-  import wvlet.helix.ServiceMixinExample._
+  import wvlet.inject.ServiceMixinExample._
 
   "Helix" should {
 
     "instantiate class" in {
 
-      val h = new Helix
+      val h = new Inject
       h.bind[Printer].to[ConsolePrinter]
       h.bind[ConsoleConfig].toInstance(ConsoleConfig(System.err))
 
@@ -206,7 +200,7 @@ class HelixTest extends WvletSpec {
 //    }
 
     "create singleton" in {
-      val h = new Helix
+      val h = new Inject
       h.bind[HeavyObject].toSingleton
 
       val c = h.newContext
@@ -217,7 +211,7 @@ class HelixTest extends WvletSpec {
 
     "create singleton eagerly" in {
       val start = System.nanoTime()
-      val h = new Helix
+      val h = new Inject
       h.bind[EagerSingleton].toEagerSingleton
       val c = h.newContext
       c.get[HeavyObject]
@@ -234,7 +228,7 @@ class HelixTest extends WvletSpec {
         val obj = inject[A]
       }
 
-      val c = new Helix().newContext
+      val c = new Inject().newContext
 
       warn(s"Running cyclic dependency test: A->B->A")
       intercept[HelixException] {
@@ -243,7 +237,7 @@ class HelixTest extends WvletSpec {
     }
 
     "Find a context in parameter" in {
-      val h = new Helix
+      val h = new Inject
       h.bind[Printer].to[ConsolePrinter]
       h.bind[ConsoleConfig].toInstance(ConsoleConfig(System.err))
       val c = h.newContext
@@ -251,7 +245,7 @@ class HelixTest extends WvletSpec {
     }
 
     "support injection listener" in {
-      val h = new Helix
+      val h = new Inject
       h.bind[EagerSingleton].toEagerSingleton
       h.bind[ConsoleConfig].toInstance(ConsoleConfig(System.err))
 
@@ -267,7 +261,7 @@ class HelixTest extends WvletSpec {
     }
 
     "support factory injection" in {
-      val h = new Helix
+      val h = new Inject
       h.bind[HelloConfig].toInstance(HelloConfig("Hello Helix!"))
       val c = h.newContext
       val f = new FactoryExample(c)
@@ -278,10 +272,10 @@ class HelixTest extends WvletSpec {
 
     }
 
-    "support tagging" taggedAs("tag") in {
+    "support tagging" taggedAs ("tag") in {
       Logger.setDefaultLogLevel(DEBUG)
 
-      val h = new Helix
+      val h = new Inject
       h.bind[Fruit @@ Apple].toInstance(Fruit("apple"))
       h.bind[Fruit @@ Banana].toInstance(Fruit("banana"))
       h.bind[Fruit @@ Lemon].toInstance(Fruit("lemon"))
