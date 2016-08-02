@@ -358,12 +358,13 @@ object ObjectSchema extends LogSupport {
         val fieldParams = entries.collect {
           case m: MethodSymbol if isFieldReader(m) => {
             entries(m.symbolInfo.info) match {
-              case NullaryMethodType(resultType: TypeRefType) => {
-                FieldParameter(cl, cl, m.name, resolveClass(resultType))
-              }
+              case NullaryMethodType(resultType: TypeRefType) =>
+                Some(FieldParameter(cl, cl, m.name, resolveClass(resultType)))
+              case other =>
+                None
             }
           }
-        }
+        }.collect { case Some(x) => x }
 
         // Aggregate parameters
         val foundParams = (constructorParams.map(_.name) ++ fieldParams.map(_.name)).toSet
