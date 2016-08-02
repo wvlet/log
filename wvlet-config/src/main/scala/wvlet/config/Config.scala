@@ -40,7 +40,7 @@ object Config {
 trait Config extends Iterable[ConfigHolder] {
   def of[ConfigType](implicit tag: ru.TypeTag[ConfigType]): ConfigType
 
-  def registerTo(i: Inject)
+  def bindConfigs(i: Inject)
 }
 
 case class ConfigPaths(configPaths: Seq[String]) extends LogSupport {

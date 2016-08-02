@@ -30,7 +30,7 @@ class ConfigurationProviderTest extends WvletSpec {
         .build
 
       val i = new Inject
-      config.registerTo(i)
+      config.bindConfigs(i)
       val c = i.newContext
 
       val myapp = c.build[MyApp]

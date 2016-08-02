@@ -22,7 +22,7 @@ class ConfigImpl(holder: Seq[ConfigHolder]) extends Config with LogSupport {
     }
   }
 
-  override def registerTo(i: Inject): Unit = {
+  override def bindConfigs(i: Inject): Unit = {
     for (c <- holder) {
       i.bind(c.tpe).toInstance(c.value)
     }
