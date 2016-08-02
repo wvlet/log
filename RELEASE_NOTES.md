@@ -1,5 +1,9 @@
 Release Notes
 ====
+2016-08-02 0.14
+ * Fix SessionListner to track all injected objects
+ * Suppress wvlet.inject logs
+
 2016-08-02 0.13
  * Rename wvlet.inject.Context -> Session
  * Suppress log messages
