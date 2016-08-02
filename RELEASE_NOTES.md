@@ -1,5 +1,11 @@
 Release Notes
 ====
+2016-08-02 0.12
+ * Enable injection of wvlet-config
+ * Add trait instantiation support
+ * Nested trait injection support
+ * Fix binding override
+
 2016-08-01 0.11
  * Add wvlet-inject for dependency injection
  * Reorganized modules into wvlet-core, wvlet-obj, wvlet-injext
