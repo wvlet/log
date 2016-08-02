@@ -23,6 +23,10 @@ object ObjectType extends LogSupport {
     }
   }
 
+  def of[A](tag: ru.TypeTag[A]) : ObjectType = {
+    of(tag.tpe)
+  }
+
   def of(tpe: ru.Type): ObjectType = {
     def resolveType = {
       val m =

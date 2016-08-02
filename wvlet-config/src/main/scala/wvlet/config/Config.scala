@@ -1,34 +1,63 @@
 package wvlet.config
 
-import scala.reflect.ClassTag
+import java.io.{File, FileNotFoundException}
+
+import wvlet.inject.Inject
+import wvlet.log.LogSupport
+
+import scala.reflect.runtime.{universe => ru}
 
 object Config {
-  private[config] case class ConfigHolder(env: String, cls: Class[_], value: Any)
+  private def defaultConfigPath = Seq(
+    ".", // current directory
+    sys.props.getOrElse("prog.home", "") // program home
+  )
 
-  def newBuilder: ConfigBuilder = new ConfigBuilderImpl
-  def newBuilder(base: Config): ConfigBuilder = {
-    new ConfigBuilderImpl().addAll(base)
+  def newBuilder(env: String, configPaths: Seq[String]=defaultConfigPath): ConfigBuilder
+  = new ConfigBuilderImpl(Environment(env), cleanupConfigPaths(configPaths))
+
+  def newBuilder(env: Environment, configPaths: Seq[String]): ConfigBuilder =
+    new ConfigBuilderImpl(env, cleanupConfigPaths(configPaths))
+
+  private def cleanupConfigPaths(paths:Seq[String]) = {
+    val b = Seq.newBuilder[String]
+    for(p <- paths) {
+      if(!p.isEmpty) {
+        b += p
+      }
+    }
+    val result = b.result()
+    if(result.isEmpty) {
+      Seq(".") // current directory
+    }
+    else {
+      result
+    }
+  }
+
+}
+
+trait Config extends Iterable[ConfigHolder] {
+  def of[ConfigType](implicit tag: ru.TypeTag[ConfigType]): ConfigType
+
+  def registerTo(i: Inject)
+}
+
+case class ConfigPaths(configPaths: Seq[String]) extends LogSupport {
+  info(s"Config file paths: [${configPaths.mkString(", ")}]")
+
+  def findConfigFile(name: String): String = {
+    configPaths
+    .map(p => new File(p, name))
+    .find(_.exists())
+    .map(_.getPath)
+    .getOrElse(throw new FileNotFoundException(s"${name} is not found"))
   }
 }
 
-import wvlet.config.Config._
-
-trait Config extends Iterable[ConfigHolder] {
-  def of[ConfigType](env: String)(implicit ev: ClassTag[ConfigType]): ConfigType
-  def of[ConfigType](env: String, default: ConfigType)(implicit ev: ClassTag[ConfigType]): ConfigType
+case class Environment(env: String, defaultEnv: String = "default") {
+  override def toString = env
 }
 
-trait ConfigProvider {
-  def config: Config
-}
 
-trait ConfigBuilder {
-  def build: Config
-  def registerFromYaml[ConfigType: ClassTag](env: String, configFilePath: String, defaultEnv:String = "default"): ConfigBuilder
-//  def registerFromYaml[ConfigType: ClassTag](env: String, configFilePath: String, defaultEnv:String): ConfigBuilder
-  def registerAllFromYaml[ConfigType: ClassTag](configFilePath: String): ConfigBuilder
-  def register[ConfigType: ClassTag](env: String, config: ConfigType): ConfigBuilder
-  def addAll(config: Config): ConfigBuilder
-  def add(config:ConfigHolder) : ConfigBuilder
-}
 

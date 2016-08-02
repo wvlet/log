@@ -9,70 +9,54 @@ case class MyConfig(id: Int, fullName: String)
   */
 class ConfigTest extends WvletSpec {
 
+  val configPaths = Seq("wvlet-config/src/test/resources")
+
+  def loadConfig(env:String) =
+    Config.newBuilder(env = env, configPaths = configPaths)
+    .registerFromYaml[MyConfig]("myconfig.yml")
+    .build
+
+
   "Config" should {
     "map yaml file into a case class" in {
+      val config = loadConfig("default")
 
-      val config = Config.newBuilder
-                   .registerFromYaml[MyConfig]("wvlet-config/src/test/resources/myconfig.yml", "default")
-                   .registerFromYaml[MyConfig]("wvlet-config/src/test/resources/myconfig.yml", "staging")
-                   .build
-
-      val c1 = config.of[MyConfig]("default")
+      val c1 = config.of[MyConfig]
       c1.id shouldBe 1
       c1.fullName shouldBe "default-config"
-
-      val c2 = config.of[MyConfig]("staging")
-      c2.id shouldBe 2
-      c2.fullName shouldBe "staging-config"
     }
 
-    "load all envs in a yaml file" in {
-      val config = Config.newBuilder
-                   .registerAllFromYaml[MyConfig]("wvlet-config/src/test/resources/myconfig.yml")
-                   .build
+    "read different env config" in {
+      val config = loadConfig("staging")
 
-      val c1 = config.of[MyConfig]("default")
-      c1.id shouldBe 1
-      c1.fullName shouldBe "default-config"
-
-      val c2 = config.of[MyConfig]("staging")
-      c2.id shouldBe 2
-      c2.fullName shouldBe "staging-config"
+      val c = config.of[MyConfig]
+      c.id shouldBe 2
+      c.fullName shouldBe "staging-config"
     }
 
     "allow override" in {
-      val config = Config.newBuilder
-                   .registerAllFromYaml[MyConfig]("wvlet-config/src/test/resources/myconfig.yml")
-                   .register[MyConfig]("default", MyConfig(10, "hello"))
+      val config = Config.newBuilder(env = "staging", configPaths = configPaths)
+                   .registerFromYaml[MyConfig]("myconfig.yml")
+                   .register[MyConfig](MyConfig(10, "hello"))
                    .build
 
-      val c1 = config.of[MyConfig]("default")
-      c1.id shouldBe 10
-      c1.fullName shouldBe "hello"
-
-      val c2 = config.of[MyConfig]("staging")
-      c2.id shouldBe 2
-      c2.fullName shouldBe "staging-config"
+      val c = config.of[MyConfig]
+      c.id shouldBe 10
+      c.fullName shouldBe "hello"
     }
 
     "create a new config based on existing one" in {
-      val config = Config.newBuilder
-                   .registerAllFromYaml[MyConfig]("wvlet-config/src/test/resources/myconfig.yml")
+      val config = Config.newBuilder(env="default", configPaths = configPaths)
+                   .registerFromYaml[MyConfig]("myconfig.yml")
                    .build
-      val config2 = Config.newBuilder(config)
-                    .register[MyConfig]("staging", MyConfig(3, "staging-2"))
+
+      val config2 = Config.newBuilder(env="production", configPaths = configPaths)
+                    .addAll(config)
                     .build
 
-      val c1 = config2.of[MyConfig]("default")
-      c1.id shouldBe 1
-      c1.fullName shouldBe "default-config"
-
-      val c2 = config2.of[MyConfig]("staging")
-      c2.id shouldBe 3
-      c2.fullName shouldBe "staging-2"
+      val c2 = config2.of[MyConfig]
+      c2.id shouldBe 1
+      c2.fullName shouldBe "default-config"
     }
-
-
-
   }
 }
