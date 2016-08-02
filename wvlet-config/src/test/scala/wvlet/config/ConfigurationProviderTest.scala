@@ -44,7 +44,7 @@ class ConfigurationProviderTest extends WvletSpec {
 
       val i = new Inject
       config.bindConfigs(i)
-      val c = i.newContext
+      val c = i.newSession
 
       val myapp = c.build[MyApp]
       myapp.configA shouldBe ConfigA(2, "staging-config")
