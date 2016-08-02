@@ -54,14 +54,14 @@ class ConfigBuilderImpl(env: Environment, configPaths: Seq[String]) extends Conf
   }
 
   def register[ConfigType](config: ConfigType)(implicit tag: ru.TypeTag[ConfigType]): ConfigBuilder = {
-    val tpe = ObjectType.of(tag)
+    val tpe = ObjectType.ofTypeTag(tag)
     configHolder += ConfigHolder(env.env, tpe, config)
     this
   }
 
   def registerFromYaml[ConfigType](configFilePath: String)
                                   (implicit tag: ru.TypeTag[ConfigType]): ConfigBuilder = {
-    val tpe = ObjectType.of(tag)
+    val tpe = ObjectType.ofTypeTag(tag)
     val cls = tpe.rawType
     val realPath = findConfigFile(configFilePath)
     info(s"Loading ${tpe} config from ${configFilePath}, env:${env}, class tag: ${ClassTag(cls)}")

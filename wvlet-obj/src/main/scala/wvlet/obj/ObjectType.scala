@@ -23,7 +23,7 @@ object ObjectType extends LogSupport {
     }
   }
 
-  def of[A](tag: ru.TypeTag[A]) : ObjectType = {
+  def ofTypeTag[A](tag: ru.WeakTypeTag[A]) : ObjectType = {
     of(tag.tpe)
   }
 

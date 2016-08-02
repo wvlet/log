@@ -13,7 +13,7 @@ class ConfigImpl(holder: Seq[ConfigHolder]) extends Config with LogSupport {
   }
 
   def of[ConfigType](implicit tag: ru.TypeTag[ConfigType]): ConfigType = {
-    val t = ObjectType.of(tag)
+    val t = ObjectType.ofTypeTag(tag)
     find(t) match {
       case Some(x) =>
         x.asInstanceOf[ConfigType]
