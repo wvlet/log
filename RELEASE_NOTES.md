@@ -1,5 +1,9 @@
 Release Notes
 ====
+2016-08-02 0.13
+ * Rename wvlet.inject.Context -> Session
+ * Suppress log messages
+
 2016-08-02 0.12
  * Enable injection of wvlet-config
  * Add trait instantiation support
