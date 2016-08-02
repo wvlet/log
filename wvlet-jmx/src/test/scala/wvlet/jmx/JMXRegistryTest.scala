@@ -52,10 +52,10 @@ class JMXRegistryTest extends WvletSpec {
       val b = new SampleMBean
       agent.register(b)
       val m = agent.getMBeanInfo("wvlet.jmx:name=SampleMBean")
-      info(m)
+      debug(m)
 
       val a = agent.getMBeanAttribute("wvlet.jmx:name=SampleMBean", "freeMemory")
-      info(a)
+      debug(a)
     }
 
     "support class field" in {

@@ -31,7 +31,7 @@ class JMXAgentTest extends WvletSpec {
         connection.getMBeanCount.toInt shouldBe >(0)
         val m = connection.getMBeanInfo(new ObjectName("java.lang:type=OperatingSystem"))
         m shouldNot be(null)
-        info(m)
+        debug(m)
       }
     }
   }
