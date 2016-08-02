@@ -22,9 +22,9 @@ val buildSettings = Seq[Setting[_]](
       </license>
     </licenses>
     <scm>
-      <connection>scm:git:github.com/xerial/wvlet.git</connection>
-      <developerConnection>scm:git:git@github.com:xerial/wvlet.git</developerConnection>
-      <url>github.com/xerial/wvlet.git</url>
+      <connection>scm:git:github.com/wvlet/wvlet.git</connection>
+      <developerConnection>scm:git:git@github.com:wvlet/wvlet.git</developerConnection>
+      <url>github.com/wvlet/wvlet.git</url>
     </scm>
     <developers>
       <developer>
@@ -146,7 +146,6 @@ lazy val wvletTest =
     buildSettings,
     description := "wvlet testing module",
     libraryDependencies ++= Seq(
-      "org.xerial" %% "xerial-core" % "3.5.0",
       "org.scalatest" %% "scalatest" % "2.2.+",
       "org.scalacheck" %% "scalacheck" % "1.11.4"
     )
