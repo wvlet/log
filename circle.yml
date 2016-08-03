@@ -1,0 +1,17 @@
+machine:
+  timezone: UTC
+  java:
+    version: oraclejdk8
+
+dependencies:
+  cache_directories:
+    - "~/.sbt"
+    - "~/.ivy2"
+  pre:
+    - ./sbt sbt-version
+  override:
+    - ./sbt compile
+
+test:
+  override:
+    - ./sbt test
