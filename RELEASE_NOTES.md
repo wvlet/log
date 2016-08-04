@@ -1,5 +1,8 @@
 Release Notes
 ====
+0.15 
+ * Fix tagged type Config @@ Scope binding in wvlet-config
+
 2016-08-02 0.14
  * Fix SessionListner to track all injected objects
  * Suppress wvlet.inject logs
