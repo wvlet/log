@@ -94,12 +94,11 @@ object ObjectType extends LogSupport {
         *      com.softwaremill.tagging.package),
         *    TypeName("$at$at"), List(TypeRef(SingleType(SingleType(SingleType(ThisType(<root>), wvlet), wvlet.helix), wvlet.helix.ServiceMixinExample), wvlet.helix.ServiceMixinExample.Fruit, List()), TypeRef(SingleType(SingleType(SingleType(ThisType(<root>), wvlet), wvlet.helix), wvlet.helix.ServiceMixinExample), wvlet.helix.ServiceMixinExample.Apple, List())))
         */
-      val cl = resolveClass(tagged)
       val resolved = typeArgs.map(apply(_))
       if(resolved.size != 2) {
         throw new IllegalStateException(s"Tagged type size should be 2: ${tagged}")
       }
-      TaggedObjectType(cl, resolved(0), resolved(1))
+      TaggedObjectType(resolved(0).rawType, resolved(0), resolved(1))
     case tpe@TypeRef(pre, symbol, typeArgs) =>
       val cl = resolveClass(tpe)
       if (typeArgs.isEmpty) {

@@ -77,7 +77,7 @@ class ConfigBuilderImpl(env: Environment, configPaths: Seq[String]) extends Conf
     val tpe = ObjectType.ofTypeTag(tag)
     val cls = tpe.rawType
     val realPath = findConfigFile(configFilePath)
-    info(s"Loading ${tpe} config from ${configFilePath}, env:${env}")
+    info(s"Loading ${tpe} config from ${realPath}, env:${env}")
     val m = YamlReader.loadMapOf[ConfigType](realPath)(ClassTag(cls))
     val config = m.get(env.env) match {
       case Some(x) => x

@@ -13,7 +13,11 @@
  */
 package wvlet.config
 
+import wvlet.obj.tag.@@
 import wvlet.test.WvletSpec
+
+trait AppScope
+trait SessionScope
 
 case class MyConfig(id: Int, fullName: String)
 
@@ -70,6 +74,19 @@ class ConfigTest extends WvletSpec {
       val c2 = config2.of[MyConfig]
       c2.id shouldBe 1
       c2.fullName shouldBe "default-config"
+    }
+
+    "read tagged type" taggedAs("tag") in {
+      val config = Config.newBuilder(env="default", configPaths = configPaths)
+                   .registerFromYaml[MyConfig @@ AppScope]("myconfig.yml")
+                   .register[MyConfig @@ SessionScope](MyConfig(2, "session").asInstanceOf[MyConfig @@ SessionScope])
+                   .build
+
+      val c = config.of[MyConfig @@ AppScope]
+      c shouldBe MyConfig(1, "default-config")
+
+      val s = config.of[MyConfig @@ SessionScope]
+      s shouldBe MyConfig(2, "session")
     }
   }
 }
