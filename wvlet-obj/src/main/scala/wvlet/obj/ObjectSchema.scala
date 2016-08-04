@@ -45,7 +45,8 @@ case class ObjectSchema(cl: Class[_], parameters: Seq[Parameter]) extends LogSup
 
   def findSignature: Option[ScalaSig] = ObjectSchema.findSignature(cl)
 
-  lazy val methods: Seq[ObjectMethod] = methodsOf(cl)
+  lazy val methods: Seq[ObjectMethod] = publicMethodsOf(cl)
+  lazy val allMethods : Seq[ObjectMethod] = allMethodsOf(cl)
 
   lazy private val parameterIndex: Map[String, Parameter] = {
     val pair = for (a <- parameters) yield CanonicalNameFormatter.format(a.name) -> a
@@ -374,14 +375,22 @@ object ObjectSchema extends LogSupport {
     }
   }
 
-  def methodsOf(cl: Class[_]): Array[ObjectMethod] = {
+  def publicMethodsOf(cl: Class[_]): Array[ObjectMethod] = {
+    methodsOf(cl, { m => !m.isPrivate && !m.isProtected })
+  }
+
+  def allMethodsOf(cl:Class[_]) : Array[ObjectMethod] = {
+    methodsOf(cl, { m => true })
+  }
+
+  def methodsOf(cl: Class[_], methodFilter: MethodSymbol => Boolean): Array[ObjectMethod] = {
     val methods = findSignature(cl) map {
       sig =>
         val entries = (0 until sig.table.length).map(sig.parseEntry(_))
 
         def isTargetMethod(m: MethodSymbol): Boolean = {
           // synthetic is used for functions returning default values of method arguments (e.g., ping$default$1)
-          m.isMethod && !m.isPrivate && !m.isProtected && !m.isImplicit && !m.isSynthetic && !m.isAccessor && m.name != "<init>" &&
+          m.isMethod && methodFilter(m) && !m.isImplicit && !m.isSynthetic && !m.isAccessor && m.name != "<init>" &&
             m.name != "$init$" && isOwnedByTargetClass(m, cl)
         }
 
@@ -515,6 +524,9 @@ object ObjectSchema extends LogSupport {
           case "scala.Predef.Map" => classOf[Map[_, _]]
           case "scala.Predef.Set" => classOf[Set[_]]
           case "scala.Predef.Class" => classOf[Class[_]]
+          case "scala.package.Throwable" => classOf[Throwable]
+          case "scala.package.Exception" => classOf[Exception]
+          case "scala.package.Error" => classOf[Error]
           case "scala.package.IndexedSeq" => classOf[IndexedSeq[_]]
           case "scala.package.Seq" => classOf[Seq[_]]
           case "scala.package.List" => classOf[List[_]]
