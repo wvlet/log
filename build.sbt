@@ -62,7 +62,7 @@ lazy val wvlet =
     publish := {},
     publishLocal := {},
     packExclude := Seq("wvlet")
-  ).aggregate(wvletCore, wvletObj, wvletInject, wvletTest, wvletLog, wvletConfig, wvletJmx) //, wvletLens, wvletJdbc, wvletDataframe, wvletRest, wvletTest, wvletCui)
+  ).aggregate(wvletCore, wvletObj, wvletInject, wvletOpts, wvletTest, wvletLog, wvletConfig, wvletJmx) //, wvletLens, wvletJdbc, wvletDataframe, wvletRest, wvletTest, wvletCui)
 
 lazy val wvletLog =
   Project(id = "wvlet-log", base = file("wvlet-log")).settings(

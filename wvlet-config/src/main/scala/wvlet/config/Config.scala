@@ -17,6 +17,7 @@ import java.io.{File, FileNotFoundException}
 
 import wvlet.inject.Inject
 import wvlet.log.LogSupport
+import wvlet.obj.ObjectType
 
 import scala.reflect.runtime.{universe => ru}
 
@@ -47,13 +48,14 @@ object Config {
       result
     }
   }
-
 }
+
+case class ConfigHolder(env: String, tpe: ObjectType, value: Any)
 
 trait Config extends Iterable[ConfigHolder] {
   def of[ConfigType](implicit tag: ru.TypeTag[ConfigType]): ConfigType
-
   def bindConfigs(i: Inject)
+  def getAll : Seq[ConfigHolder]
 }
 
 case class ConfigPaths(configPaths: Seq[String]) extends LogSupport {

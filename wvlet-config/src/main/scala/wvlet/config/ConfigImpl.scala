@@ -42,5 +42,7 @@ class ConfigImpl(holder: Seq[ConfigHolder]) extends Config with LogSupport {
   }
 
   override def iterator: Iterator[ConfigHolder] = holder.iterator
+
+  override def getAll: Seq[ConfigHolder] = holder
 }
 

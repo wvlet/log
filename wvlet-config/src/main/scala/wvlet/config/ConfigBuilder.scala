@@ -29,7 +29,7 @@ trait ConfigBuilder {
   def add(config: ConfigHolder): ConfigBuilder
 }
 
-private[config] case class ConfigHolder(env: String, tpe: ObjectType, value: Any)
+
 /**
   *
   */
@@ -77,13 +77,16 @@ class ConfigBuilderImpl(env: Environment, configPaths: Seq[String]) extends Conf
     val tpe = ObjectType.ofTypeTag(tag)
     val cls = tpe.rawType
     val realPath = findConfigFile(configFilePath)
-    info(s"Loading ${tpe} config from ${realPath}, env:${env}")
+
     val m = YamlReader.loadMapOf[ConfigType](realPath)(ClassTag(cls))
     val config = m.get(env.env) match {
-      case Some(x) => x
+      case Some(x) =>
+        info(s"Loading ${tpe} config from ${realPath}, env:${env}")
+        x
       case None =>
         // Load default
-        warn(s"Configuration for ${env.env} is not found in ${realPath}. Load ${env.defaultEnv} configuration instead")
+        trace(s"Configuration for ${env.env} is not found in ${realPath}. Load ${env.defaultEnv} configuration instead")
+        info(s"Loading ${tpe} config from ${realPath}, env:${env} -> ${env.defaultEnv} ")
         m.getOrElse(
           env.defaultEnv, {
             val m = s"No config for ${tpe} is found for ${env.defaultEnv} within ${realPath}"
