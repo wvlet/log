@@ -15,7 +15,7 @@ package wvlet.config
 
 import java.io.{File, FileNotFoundException}
 
-import wvlet.log.LogSupport
+import wvlet.log.{LogSupport, Logger}
 import wvlet.obj.ObjectType
 
 import scala.reflect.ClassTag
@@ -33,8 +33,11 @@ trait ConfigBuilder {
 /**
   *
   */
-class ConfigBuilderImpl(env: Environment, configPaths: Seq[String]) extends ConfigBuilder with LogSupport {
-  info(s"Config file paths: [${configPaths.mkString(", ")}]")
+class ConfigBuilderImpl(env: Environment, configPaths: Seq[String]) extends ConfigBuilder {
+
+  private val logger = Logger.of[ConfigBuilder]
+
+  logger.info(s"Config file paths: [${configPaths.mkString(", ")}]")
   require(!configPaths.isEmpty, "configPaths is empty")
 
   private var configHolder = Seq.newBuilder[ConfigHolder]
@@ -81,12 +84,12 @@ class ConfigBuilderImpl(env: Environment, configPaths: Seq[String]) extends Conf
     val m = YamlReader.loadMapOf[ConfigType](realPath)(ClassTag(cls))
     val config = m.get(env.env) match {
       case Some(x) =>
-        info(s"Loading ${tpe} config from ${realPath}, env:${env}")
+        logger.info(s"Loading ${tpe} config from ${realPath}, env:${env}")
         x
       case None =>
         // Load default
-        trace(s"Configuration for ${env.env} is not found in ${realPath}. Load ${env.defaultEnv} configuration instead")
-        info(s"Loading ${tpe} config from ${realPath}, env:${env} -> ${env.defaultEnv} ")
+        logger.debug(s"Configuration for ${env.env} is not found in ${realPath}. Load ${env.defaultEnv} configuration instead")
+        logger.info(s"Loading ${tpe} from ${realPath}, env:${env} <= used env:${env.defaultEnv}")
         m.getOrElse(
           env.defaultEnv, {
             val m = s"No config for ${tpe} is found for ${env.defaultEnv} within ${realPath}"

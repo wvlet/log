@@ -1,6 +1,7 @@
 Release Notes
 ====
-0.15 
+2016-08-05 0.15 
+ * Add wvlet-opts for parsing command line options
  * Fix tagged type Config @@ Scope binding in wvlet-config
 
 2016-08-02 0.14
