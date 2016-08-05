@@ -132,6 +132,15 @@ lazy val wvletRest =
     )
   ).dependsOn(wvletCore, wvletTest % "test->compile")
 
+lazy val wvletOpts =
+  Project(id = "wvlet-opts", base = file("wvlet-opts")).settings(
+    buildSettings,
+    description := "wvlet command-line option parser",
+    libraryDependencies ++= Seq(
+
+    )
+  ) dependsOn(wvletObj, wvletTest % "test->compile")
+
 lazy val wvletCui =
   Project(id = "wvlet-cui", base = file("wvlet-cui")).settings(
     buildSettings,
