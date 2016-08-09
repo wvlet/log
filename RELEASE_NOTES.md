@@ -1,5 +1,9 @@
 Release Notes
 ====
+2016-08-09 0.16
+ * Avoid using auto-generated annonymous trait name for logger name of LogSupport trait
+ * Exclude $ from Scala object logger name
+
 2016-08-05 0.15 
  * Add wvlet-opts for parsing command line options
  * Fix tagged type Config @@ Scope binding in wvlet-config
