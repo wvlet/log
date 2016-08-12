@@ -3,21 +3,16 @@ wvlet-config
 
 ## Application configuration flow
 
-- User specified an environment (e.g., `test`, `staging`, `production`, etc)
+- User specifies an environment (e.g., `test`, `staging`, `production`, etc)
 - Read configuration file (YAML)
   - wvlet-config will search config files from a given `conigpath(s)`
-  - Pick object of the target environment
   - If any configuration for the target configuration is not found, use `default` configuration.
 
-- Mapping configuraion to Scala case class
-
 - Supply the configuration (e.g., confidential information such as password, apikey, etc.)
-  - Read these configuratios using your favorite way
-  - Override a part of your configuration
+  - Read these configurations in a secure manner
+  - Override a part of your configurations
 
-- Enable retrieving these configuration from your program
-  - wvlet-inject
-
+- Use ConfigBuider to build configurations
 
 
 ## Usage
@@ -41,7 +36,7 @@ default:
   host: localhost
   port: 8080
 
-# Override port paraameter for development
+# Override port number for development
 development:
   <<: *default
   port: 9000
@@ -59,7 +54,7 @@ server.password=xxxxxyyyyyy
 
 code:
 ```scala
-import wvlet.config
+import wvlet.config.ConfigBuilder
 import wvlet.obj.tag.@@
 
 // Configulation classes can have default values
@@ -67,7 +62,7 @@ import wvlet.obj.tag.@@
 case class LogConfig(file:String, maxFiles:Int=100, maxSize:Int=10485760)
 case class ServerConfig(host:String, port:Int, password:String)
 
-// Type tag to use same configuration objects for different purposes
+// To use the same configuration class for different purposes, use type tag (@@ Tag)
 trait Access
 trait Db
 
