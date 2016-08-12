@@ -17,20 +17,20 @@ wvlet-config
 
 ## Usage
 
-`config/access-log.yml`:
+**config/access-log.yml**:
 ```
 default:
   file: log/access.log
   max_files: 50
 ```
 
-`config/db-log.yml`:
+**config/db-log.yml**:
 ```
 default:
   file: log/db.log
 ```
 
-`config/server.yml`
+**config/server.yml**
 ```
 default:
   host: localhost
@@ -42,7 +42,7 @@ development:
   port: 9000
 ```
 
-`config.properties`:
+**config.properties**:
 ```
 # ([tag].)?[prefix].[param]=(value)
 access.log.file=/path/to/access.log
