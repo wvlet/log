@@ -39,6 +39,15 @@ object ObjectBuilder extends LogSupport {
     new SimpleObjectBuilder(cl)
   }
 
+  def fromObject[A](obj:A) : ObjectBuilder[_] = {
+    val b = new SimpleObjectBuilder(obj.getClass)
+    val schema = ObjectSchema.getSchemaOf(obj)
+    for(p <- schema.parameters) {
+      b.set(p.name, p.get(obj))
+    }
+    b
+  }
+
   sealed trait BuilderElement
   case class Holder[A](holder: ObjectBuilder[A]) extends BuilderElement
   case class Value(value: Any) extends BuilderElement

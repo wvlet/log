@@ -27,21 +27,24 @@ object Config {
     sys.props.getOrElse("prog.home", "") // program home
   )
 
-  def newBuilder(env: String, configPaths: Seq[String]=defaultConfigPath): ConfigBuilder
-  = new ConfigBuilderImpl(Environment(env), cleanupConfigPaths(configPaths))
+  def newBuilder(env: String, configPaths: String): ConfigBuilder
+  = new ConfigBuilder(Environment(env), cleanupConfigPaths(configPaths.split(":")))
+
+  def newBuilder(env: String, configPaths: Seq[String] = defaultConfigPath): ConfigBuilder
+  = new ConfigBuilder(Environment(env), cleanupConfigPaths(configPaths))
 
   def newBuilder(env: Environment, configPaths: Seq[String]): ConfigBuilder =
-    new ConfigBuilderImpl(env, cleanupConfigPaths(configPaths))
+    new ConfigBuilder(env, cleanupConfigPaths(configPaths))
 
-  private def cleanupConfigPaths(paths:Seq[String]) = {
+  private def cleanupConfigPaths(paths: Seq[String]) = {
     val b = Seq.newBuilder[String]
-    for(p <- paths) {
-      if(!p.isEmpty) {
+    for (p <- paths) {
+      if (!p.isEmpty) {
         b += p
       }
     }
     val result = b.result()
-    if(result.isEmpty) {
+    if (result.isEmpty) {
       Seq(".") // current directory
     }
     else {
@@ -55,7 +58,7 @@ case class ConfigHolder(env: String, tpe: ObjectType, value: Any)
 trait Config extends Iterable[ConfigHolder] {
   def of[ConfigType](implicit tag: ru.TypeTag[ConfigType]): ConfigType
   def bindConfigs(i: Inject)
-  def getAll : Seq[ConfigHolder]
+  def getAll: Seq[ConfigHolder]
 }
 
 case class ConfigPaths(configPaths: Seq[String]) extends LogSupport {

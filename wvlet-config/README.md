@@ -54,7 +54,7 @@ server.password=xxxxxyyyyyy
 
 code:
 ```scala
-import wvlet.config.ConfigBuilder
+import wvlet.config.Config
 import wvlet.obj.tag.@@
 
 // Configulation classes can have default values
@@ -67,7 +67,7 @@ trait Access
 trait Db
 
 val config = 
-  ConfigBuilder(env="development", configPaths="./config")
+  Config.newBuilder(env="development", configPaths="./config")
     .registerFromYaml[LogConfig @@ Access]("access-log.yml")
     .registerFromYaml[LogConfig @@ Db]("db-log.yml")
     .registerFromYaml[ServerConfig]("server.yml")

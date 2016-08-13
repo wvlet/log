@@ -102,6 +102,8 @@ object ObjectSchema extends LogSupport {
     */
   def apply(cl: Class[_]): ObjectSchema = schemaTable.getOrElseUpdate(cl, createSchema(cl))
 
+  def of(tpe: ObjectType) : ObjectSchema = ObjectSchema(tpe.rawType)
+
   private def createSchema(cl: Class[_]): ObjectSchema = {
     trace(s"createSchema of ${cl}")
     new ObjectSchema(cl, parametersOf(cl))
