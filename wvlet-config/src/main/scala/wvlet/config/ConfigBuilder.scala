@@ -129,7 +129,7 @@ class ConfigBuilder(env: Environment, configPaths: Seq[String]) extends LogSuppo
     val m = loadMapOf[ConfigType](realPath)(ClassTag(cls))
     val config = m.get(env.env) match {
       case Some(x) =>
-        info(s"Loading ${tpe} config from ${realPath}, env:${env}")
+        info(s"Loading ${tpe} from ${realPath}, env:${env}")
         x
       case None =>
         // Load default

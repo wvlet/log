@@ -6,11 +6,11 @@ wvlet-config
 - User specifies an environment (e.g., `test`, `staging`, `production`, etc)
 - Read configuration file (YAML)
   - wvlet-config will search config files from a given `conigpath(s)`
-  - If any configuration for the target configuration is not found, use `default` configuration.
+  - If any configuration for the target environment is not found, it uses `default` configuration.
 
-- Supply the configuration (e.g., confidential information such as password, apikey, etc.)
-  - Read these configurations in a secure manner
-  - Override a part of your configurations
+- Supply additional configurations (e.g., confidential information such as password, apikey, etc.)
+  - Read these configurations in a secure manner and create a `Properties` object.
+  - Override your configurations with this `Properties` object.
 
 - Use ConfigBuider to build configurations
 
@@ -58,7 +58,7 @@ import wvlet.config.Config
 import wvlet.obj.tag.@@
 
 // Configulation classes can have default values
-// Configuration class names become prefixes by removing Config
+// Configuration class name convention: xxxxConfig (xxxx will be the prefix)
 case class LogConfig(file:String, maxFiles:Int=100, maxSize:Int=10485760)
 case class ServerConfig(host:String, port:Int, password:String)
 
