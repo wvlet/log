@@ -13,6 +13,7 @@
  */
 package wvlet.config
 
+import java.io.FileOutputStream
 import java.util.Properties
 
 import wvlet.obj.tag.@@
@@ -91,24 +92,41 @@ class ConfigTest extends WvletSpec {
     }
 
     "override values with properties" taggedAs ("props") in {
-
       val p = new Properties
       p.setProperty("sample.id", "10")
       p.setProperty("appscope.sample.id", "2")
       p.setProperty("appscope.sample.full_name", "hellohello")
 
-      val config = Config.newBuilder(env = "devault", configPaths = configPaths)
-                   .register[SampleConfig](SampleConfig(1, "hello"))
-                   .register[SampleConfig @@ AppScope](SampleConfig(1, "hellohello").asInstanceOf[SampleConfig @@ AppScope])
-                   .overrideWithProperties(p)
-                   .build
+      val c1 = Config.newBuilder(env = "devault", configPaths = configPaths)
+               .register[SampleConfig](SampleConfig(1, "hello"))
+               .register[SampleConfig @@ AppScope](SampleConfig(1, "hellohello").asInstanceOf[SampleConfig @@ AppScope])
+               .overrideWithProperties(p)
+               .build
 
-      val c = config.of[SampleConfig]
-      c shouldBe SampleConfig(10, "hello")
+      class ConfigSpec(config:Config) {
+        val c = config.of[SampleConfig]
+        c shouldBe SampleConfig(10, "hello")
 
-      val c2 = config.of[SampleConfig@@AppScope]
-      c2 shouldBe SampleConfig(2, "hellohello")
+        val c2 = config.of[SampleConfig @@ AppScope]
+        c2 shouldBe SampleConfig(2, "hellohello")
+      }
+
+      new ConfigSpec(c1)
+
+      // Using properties files
+      IOUtil.withTempFile("config", dir = "target") { file =>
+        val f = new FileOutputStream(file)
+        p.store(f, "config prop")
+        f.close()
+
+        val c2 = Config.newBuilder(env = "devault", configPaths = "target")
+                 .register[SampleConfig](SampleConfig(1, "hello"))
+                 .register[SampleConfig @@ AppScope](SampleConfig(1, "hellohello").asInstanceOf[SampleConfig @@ AppScope])
+                 .overrideWithPropertiesFile(file.getName)
+                 .build
+
+        new ConfigSpec(c2)
+      }
     }
-
   }
 }

@@ -29,6 +29,17 @@ object IOUtil {
     }
   }
 
+  def withTempFile[U](name:String, dir:String="target", suffix:String = ".tmp")(body:File => U) = {
+    val f = File.createTempFile(name, suffix, new File(dir))
+    try {
+      body(f)
+    }
+    finally {
+      f.delete()
+    }
+  }
+
+
   def readAsString(resourcePath: String) = {
     require(resourcePath != null, s"resourcePath is null")
     val file = findPath(new File(resourcePath))

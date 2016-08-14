@@ -30,11 +30,9 @@ import scala.util.{Failure, Success, Try}
 object ConfigBuilder extends LogSupport {
   def apply(env: String, configPaths: String) = new ConfigBuilder(Environment(env), configPaths.split(":"))
 
-
-
   private[config] def extractPrefix(t: ObjectType): ConfigPrefix = {
 
-    def canonicalize(s:String) : String = {
+    def canonicalize(s: String): String = {
       val name = s.replaceAll("Config$", "")
       CanonicalNameFormatter.format(name)
     }
@@ -49,7 +47,7 @@ object ConfigBuilder extends LogSupport {
 
   case class ConfigPrefix(tag: Option[String], prefix: String)
   case class ConfigParamKey(prefix: ConfigPrefix, param: String)
-  case class ConfigParam(key:ConfigParamKey, v:Any)
+  case class ConfigParam(key: ConfigParamKey, v: Any)
 
   private[config] def configToProps(configHolder: ConfigHolder): Seq[ConfigParam] = {
     val prefix = extractPrefix(configHolder.tpe)
@@ -149,7 +147,7 @@ class ConfigBuilder(env: Environment, configPaths: Seq[String]) extends LogSuppo
 
   def overrideWithPropertiesFile(propertiesFile: String): ConfigBuilder = {
     val propPath = findConfigFile(propertiesFile)
-    val props = withResource(new FileInputStream(propertiesFile)) { in =>
+    val props = withResource(new FileInputStream(propPath)) { in =>
       val p = new Properties()
       p.load(in)
       p
@@ -157,7 +155,7 @@ class ConfigBuilder(env: Environment, configPaths: Seq[String]) extends LogSuppo
     overrideWithProperties(props)
   }
 
-  def overrideWithProperties(props:Properties) : ConfigBuilder = {
+  def overrideWithProperties(props: Properties): ConfigBuilder = {
     val overrides = {
       val b = Seq.newBuilder[ConfigParam]
       for ((k, v) <- props) yield {
@@ -173,7 +171,7 @@ class ConfigBuilder(env: Environment, configPaths: Seq[String]) extends LogSuppo
       val b = ObjectBuilder.fromObject(c.value)
       val prefix = extractPrefix(c.tpe)
       val overrideParams = overrides.filter(_.key.prefix == prefix)
-      for(p <- overrideParams) {
+      for (p <- overrideParams) {
         trace(s"override: ${p}")
         b.set(p.key.param, p.v)
       }
