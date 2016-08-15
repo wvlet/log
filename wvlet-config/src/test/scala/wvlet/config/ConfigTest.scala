@@ -13,13 +13,16 @@
  */
 package wvlet.config
 
+import java.io.FileOutputStream
+import java.util.Properties
+
 import wvlet.obj.tag.@@
 import wvlet.test.WvletSpec
 
 trait AppScope
 trait SessionScope
 
-case class MyConfig(id: Int, fullName: String)
+case class SampleConfig(id: Int, fullName: String)
 
 /**
   *
@@ -28,17 +31,16 @@ class ConfigTest extends WvletSpec {
 
   val configPaths = Seq("wvlet-config/src/test/resources")
 
-  def loadConfig(env:String) =
+  def loadConfig(env: String) =
     Config.newBuilder(env = env, configPaths = configPaths)
-    .registerFromYaml[MyConfig]("myconfig.yml")
+    .registerFromYaml[SampleConfig]("myconfig.yml")
     .build
-
 
   "Config" should {
     "map yaml file into a case class" in {
       val config = loadConfig("default")
 
-      val c1 = config.of[MyConfig]
+      val c1 = config.of[SampleConfig]
       c1.id shouldBe 1
       c1.fullName shouldBe "default-config"
     }
@@ -46,47 +48,85 @@ class ConfigTest extends WvletSpec {
     "read different env config" in {
       val config = loadConfig("staging")
 
-      val c = config.of[MyConfig]
+      val c = config.of[SampleConfig]
       c.id shouldBe 2
       c.fullName shouldBe "staging-config"
     }
 
     "allow override" in {
       val config = Config.newBuilder(env = "staging", configPaths = configPaths)
-                   .registerFromYaml[MyConfig]("myconfig.yml")
-                   .register[MyConfig](MyConfig(10, "hello"))
+                   .registerFromYaml[SampleConfig]("myconfig.yml")
+                   .register[SampleConfig](SampleConfig(10, "hello"))
                    .build
 
-      val c = config.of[MyConfig]
+      val c = config.of[SampleConfig]
       c.id shouldBe 10
       c.fullName shouldBe "hello"
     }
 
     "create a new config based on existing one" in {
-      val config = Config.newBuilder(env="default", configPaths = configPaths)
-                   .registerFromYaml[MyConfig]("myconfig.yml")
+      val config = Config.newBuilder(env = "default", configPaths = configPaths)
+                   .registerFromYaml[SampleConfig]("myconfig.yml")
                    .build
 
-      val config2 = Config.newBuilder(env="production", configPaths = configPaths)
+      val config2 = Config.newBuilder(env = "production", configPaths = configPaths)
                     .addAll(config)
                     .build
 
-      val c2 = config2.of[MyConfig]
+      val c2 = config2.of[SampleConfig]
       c2.id shouldBe 1
       c2.fullName shouldBe "default-config"
     }
 
-    "read tagged type" taggedAs("tag") in {
-      val config = Config.newBuilder(env="default", configPaths = configPaths)
-                   .registerFromYaml[MyConfig @@ AppScope]("myconfig.yml")
-                   .register[MyConfig @@ SessionScope](MyConfig(2, "session").asInstanceOf[MyConfig @@ SessionScope])
+    "read tagged type" taggedAs ("tag") in {
+      val config = Config.newBuilder(env = "default", configPaths = configPaths)
+                   .registerFromYaml[SampleConfig @@ AppScope]("myconfig.yml")
+                   .register[SampleConfig @@ SessionScope](SampleConfig(2, "session").asInstanceOf[SampleConfig @@ SessionScope])
                    .build
 
-      val c = config.of[MyConfig @@ AppScope]
-      c shouldBe MyConfig(1, "default-config")
+      val c = config.of[SampleConfig @@ AppScope]
+      c shouldBe SampleConfig(1, "default-config")
 
-      val s = config.of[MyConfig @@ SessionScope]
-      s shouldBe MyConfig(2, "session")
+      val s = config.of[SampleConfig @@ SessionScope]
+      s shouldBe SampleConfig(2, "session")
+    }
+
+    "override values with properties" taggedAs ("props") in {
+      val p = new Properties
+      p.setProperty("sample.id", "10")
+      p.setProperty("appscope.sample.id", "2")
+      p.setProperty("appscope.sample.full_name", "hellohello")
+
+      val c1 = Config.newBuilder(env = "devault", configPaths = configPaths)
+               .register[SampleConfig](SampleConfig(1, "hello"))
+               .register[SampleConfig @@ AppScope](SampleConfig(1, "hellohello").asInstanceOf[SampleConfig @@ AppScope])
+               .overrideWithProperties(p)
+               .build
+
+      class ConfigSpec(config:Config) {
+        val c = config.of[SampleConfig]
+        c shouldBe SampleConfig(10, "hello")
+
+        val c2 = config.of[SampleConfig @@ AppScope]
+        c2 shouldBe SampleConfig(2, "hellohello")
+      }
+
+      new ConfigSpec(c1)
+
+      // Using properties files
+      IOUtil.withTempFile("config", dir = "target") { file =>
+        val f = new FileOutputStream(file)
+        p.store(f, "config prop")
+        f.close()
+
+        val c2 = Config.newBuilder(env = "devault", configPaths = "target")
+                 .register[SampleConfig](SampleConfig(1, "hello"))
+                 .register[SampleConfig @@ AppScope](SampleConfig(1, "hellohello").asInstanceOf[SampleConfig @@ AppScope])
+                 .overrideWithPropertiesFile(file.getName)
+                 .build
+
+        new ConfigSpec(c2)
+      }
     }
   }
 }

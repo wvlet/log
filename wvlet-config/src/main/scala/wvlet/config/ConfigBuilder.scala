@@ -13,34 +13,86 @@
  */
 package wvlet.config
 
-import java.io.{File, FileNotFoundException}
+import java.io.{File, FileInputStream, FileNotFoundException}
+import java.util.Properties
 
-import wvlet.log.{LogSupport, Logger}
-import wvlet.obj.ObjectType
+import wvlet.config.IOUtil._
+import wvlet.config.YamlReader.loadMapOf
+import wvlet.log.LogSupport
+import wvlet.obj.ObjectBuilder.CanonicalNameFormatter
+import wvlet.obj.{ObjectBuilder, ObjectSchema, ObjectType, TaggedObjectType}
 
+import scala.collection.JavaConversions._
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
+import scala.util.{Failure, Success, Try}
 
-trait ConfigBuilder {
-  def build: Config
-  def registerFromYaml[ConfigType: ru.TypeTag](configFilePath: String): ConfigBuilder
-  def register[ConfigType: ru.TypeTag](config: ConfigType): ConfigBuilder
-  def addAll(config: Config): ConfigBuilder
-  def add(config: ConfigHolder): ConfigBuilder
+object ConfigBuilder extends LogSupport {
+  def apply(env: String, configPaths: String) = new ConfigBuilder(Environment(env), configPaths.split(":"))
+
+  private[config] def extractPrefix(t: ObjectType): ConfigPrefix = {
+
+    def canonicalize(s: String): String = {
+      val name = s.replaceAll("Config$", "")
+      CanonicalNameFormatter.format(name)
+    }
+
+    t match {
+      case TaggedObjectType(raw, base, taggedType) =>
+        ConfigPrefix(Some(CanonicalNameFormatter.format(taggedType.name)), canonicalize(base.name))
+      case _ =>
+        ConfigPrefix(None, canonicalize(t.name))
+    }
+  }
+
+  case class ConfigPrefix(tag: Option[String], prefix: String)
+  case class ConfigParamKey(prefix: ConfigPrefix, param: String)
+  case class ConfigParam(key: ConfigParamKey, v: Any)
+
+  private[config] def configToProps(configHolder: ConfigHolder): Seq[ConfigParam] = {
+    val prefix = extractPrefix(configHolder.tpe)
+    val schema = ObjectSchema.of(configHolder.tpe)
+    val b = Seq.newBuilder[ConfigParam]
+    for (p <- schema.parameters) yield {
+      val key = ConfigParamKey(prefix, CanonicalNameFormatter.format(p.name))
+      Try(p.get(configHolder.value)) match {
+        case Success(v) => b += ConfigParam(key, v)
+        case Failure(e) =>
+          warn(s"Failed to read parameter ${p} from ${configHolder}")
+      }
+    }
+    b.result()
+  }
+
+  private[config] def toConfigKey(propKey: String): ConfigParamKey = {
+    val c = propKey.split("\\.")
+    c.length match {
+      case l if l >= 3 =>
+        val tag = c(0)
+        val prefix = c(1)
+        val param = CanonicalNameFormatter.format(c.drop(2).mkString)
+        ConfigParamKey(ConfigPrefix(Some(tag), prefix), param)
+      case l if l == 2 =>
+        val prefix = c(0)
+        val param = CanonicalNameFormatter.format(c(1))
+        ConfigParamKey(ConfigPrefix(None, prefix), param)
+      case other =>
+        throw new IllegalArgumentException(s"${propKey} should have ([tag].)?[prefix].[param] format")
+    }
+  }
+
 }
 
+import wvlet.config.ConfigBuilder._
 
 /**
   *
   */
-class ConfigBuilderImpl(env: Environment, configPaths: Seq[String]) extends ConfigBuilder {
+class ConfigBuilder(env: Environment, configPaths: Seq[String]) extends LogSupport {
 
-  private val logger = Logger.of[ConfigBuilder]
-
-  logger.info(s"Config file paths: [${configPaths.mkString(", ")}]")
   require(!configPaths.isEmpty, "configPaths is empty")
 
-  private var configHolder = Seq.newBuilder[ConfigHolder]
+  private val configHolder = Seq.newBuilder[ConfigHolder]
 
   private def findConfigFile(name: String): String = {
     configPaths
@@ -60,15 +112,6 @@ class ConfigBuilderImpl(env: Environment, configPaths: Seq[String]) extends Conf
     this
   }
 
-  def build: Config = {
-    // Override previous occurrences of the same type config
-    val b = Map.newBuilder[ObjectType, ConfigHolder]
-    for (s <- configHolder.result) {
-      b += s.tpe -> s
-    }
-    new ConfigImpl(b.result().values.toIndexedSeq)
-  }
-
   def register[ConfigType](config: ConfigType)(implicit tag: ru.TypeTag[ConfigType]): ConfigBuilder = {
     val tpe = ObjectType.ofTypeTag(tag)
     configHolder += ConfigHolder(env.env, tpe, config)
@@ -81,15 +124,15 @@ class ConfigBuilderImpl(env: Environment, configPaths: Seq[String]) extends Conf
     val cls = tpe.rawType
     val realPath = findConfigFile(configFilePath)
 
-    val m = YamlReader.loadMapOf[ConfigType](realPath)(ClassTag(cls))
+    val m = loadMapOf[ConfigType](realPath)(ClassTag(cls))
     val config = m.get(env.env) match {
       case Some(x) =>
-        logger.info(s"Loading ${tpe} config from ${realPath}, env:${env}")
+        info(s"Loading ${tpe} from ${realPath}, env:${env}")
         x
       case None =>
         // Load default
-        logger.debug(s"Configuration for ${env.env} is not found in ${realPath}. Load ${env.defaultEnv} configuration instead")
-        logger.info(s"Loading ${tpe} from ${realPath}, env:${env} <= used env:${env.defaultEnv}")
+        debug(s"Configuration for ${env.env} is not found in ${realPath}. Load ${env.defaultEnv} configuration instead")
+        info(s"Loading ${tpe} from ${realPath}, env:${env} <= used env:${env.defaultEnv}")
         m.getOrElse(
           env.defaultEnv, {
             val m = s"No config for ${tpe} is found for ${env.defaultEnv} within ${realPath}"
@@ -100,5 +143,51 @@ class ConfigBuilderImpl(env: Environment, configPaths: Seq[String]) extends Conf
     }
     configHolder += ConfigHolder(env.env, tpe, config)
     this
+  }
+
+  def overrideWithPropertiesFile(propertiesFile: String): ConfigBuilder = {
+    val propPath = findConfigFile(propertiesFile)
+    val props = withResource(new FileInputStream(propPath)) { in =>
+      val p = new Properties()
+      p.load(in)
+      p
+    }
+    overrideWithProperties(props)
+  }
+
+  def overrideWithProperties(props: Properties): ConfigBuilder = {
+    val overrides = {
+      val b = Seq.newBuilder[ConfigParam]
+      for ((k, v) <- props) yield {
+        val key = toConfigKey(k)
+        b += ConfigParam(key, v)
+      }
+      b.result
+    }
+
+    val currentConfigs = configHolder.result()
+    configHolder.clear()
+    for (c <- currentConfigs) {
+      val b = ObjectBuilder.fromObject(c.value)
+      val prefix = extractPrefix(c.tpe)
+      val overrideParams = overrides.filter(_.key.prefix == prefix)
+      for (p <- overrideParams) {
+        trace(s"override: ${p}")
+        b.set(p.key.param, p.v)
+      }
+      val newConfig = b.build
+      configHolder += ConfigHolder(c.env, c.tpe, newConfig)
+    }
+
+    this
+  }
+
+  def build: Config = {
+    // Override previous occurrences of the same type config
+    val b = Map.newBuilder[ObjectType, ConfigHolder]
+    for (s <- configHolder.result) {
+      b += s.tpe -> s
+    }
+    new ConfigImpl(b.result().values.toIndexedSeq)
   }
 }
