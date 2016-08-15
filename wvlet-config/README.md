@@ -5,7 +5,7 @@ wvlet-config
 
 - User specifies an environment (e.g., `test`, `staging`, `production`, etc)
 - Read configuration file (YAML)
-  - wvlet-config will search config files from a given `conigpath(s)`
+  - wvlet-config will search config files from a given `configpath(s)`
   - If no configuration for the target environment is found, it uses `default` configuration.
 
 - Supply additional configurations (e.g., confidential information such as password, apikey, etc.)
