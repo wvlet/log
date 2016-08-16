@@ -1,5 +1,8 @@
 Release Notes
 ====
+2016-08-16 0.17
+ * Allow overriding Config using java.util.Properties
+
 2016-08-09 0.16
  * Avoid using auto-generated annonymous trait name for logger name of LogSupport trait
  * Exclude $ from Scala object logger name
