@@ -197,8 +197,16 @@ object ServiceMixinExample {
     def hello { info("hello!") }
   }
 
+  object ConcreteSingleton extends AbstractModule with LogSupport {
+    def hello { info("hello singleton!") }
+  }
+
   trait NonAbstractModule extends LogSupport {
     info(s"This should be built")
+  }
+
+  object SingletonOfNonAbstractModules extends NonAbstractModule {
+    info("Hello singleton")
   }
 
 }
@@ -340,10 +348,27 @@ class InjectTest extends WvletSpec {
       m.hello
     }
 
+    "built a trait bound to singleton" taggedAs("singleton") in {
+      val h = new Inject
+      h.bind[AbstractModule].toInstance(ConcreteSingleton)
+      val s = h.newSession
+      val m = s.build[AbstractModule]
+      m.hello
+    }
+
     "built a trait" taggedAs("trait") in {
       val h = new Inject
       val s = h.newSession
       val m = s.build[NonAbstractModule]
+    }
+
+    "built a trait to singleton" taggedAs("trait-singleton") in {
+      val h = new Inject
+      h.bind[NonAbstractModule].toInstance(SingletonOfNonAbstractModules)
+      val s = h.newSession
+
+      val m = s.build[NonAbstractModule]
+      m shouldBe SingletonOfNonAbstractModules
     }
 
   }
