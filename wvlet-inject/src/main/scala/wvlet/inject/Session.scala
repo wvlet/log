@@ -40,8 +40,3 @@ trait Session {
 trait SessionListener {
   def afterInjection(t: ObjectType, injectee: Any)
 }
-
-
-
-
-

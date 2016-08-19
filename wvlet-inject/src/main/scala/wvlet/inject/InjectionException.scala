@@ -23,6 +23,8 @@ object InjectionException {
   }
   case class MISSING_SESSION(cl:ObjectType) extends ErrorType
   case class CYCLIC_DEPENDENCY(deps: Set[ObjectType]) extends ErrorType
+  case class BINDING_NOT_FOUND(cl:ObjectType) extends ErrorType
+
 
 }
 /**

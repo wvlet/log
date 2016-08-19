@@ -25,7 +25,9 @@ object InjectMacros extends LogSupport {
     import c.universe._
     val t = ev.tpe.typeArgs(0)
     c.Expr(
-      q"""${c.prefix}.register[$t]((new $t { protected def __current_session = ${c.prefix} }).asInstanceOf[$t])"""
+      q"""
+         ${c.prefix}.register[$t]((new $t { protected def __current_session = ${c.prefix} }).asInstanceOf[$t])
+        """
     )
   }
 

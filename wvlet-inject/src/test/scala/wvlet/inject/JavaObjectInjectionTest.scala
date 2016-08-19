@@ -14,25 +14,52 @@
 package wvlet.inject
 
 import org.komamitsu.fluency.Fluency
+import wvlet.log.{LogLevel, Logger}
 import wvlet.test.WvletSpec
-
 
 trait FluencyLogging {
   val log = inject[Fluency]
 }
 
+trait MetricService {
+  val m = inject[FluencyLogging]
+}
 
 /**
   *
   */
 class JavaObjectInjectionTest extends WvletSpec {
-
   "Inject" should {
-    "inject Fluency object" in {
+    "detect uninjectable objects" in {
       val i = new Inject
+      val s = i.newSession
+      intercept[InjectionException] {
+        // Fluency has no default constructor. We cannot inject Session to it, so the user needs to bind it explicitly to some instance
+        val service = s.build[FluencyLogging]
+      }
+    }
+
+    "inject Fluency" in {
+      val i = new Inject
+      i.bind[Fluency].toInstance(Fluency.defaultFluency)
       val s = i.newSession
       val service = s.build[FluencyLogging]
     }
-  }
 
+    "inject Fluency in nested scope" ignore {
+      Logger("wvlet.inject").setLogLevel(LogLevel.TRACE)
+
+      val i = new Inject
+      i.bind[Fluency].toInstance(Fluency.defaultFluency)
+      val s = i.newSession
+      val metricService = s.build[MetricService]
+    }
+
+    "compile Fluency using reflection" taggedAs ("reflection") in {
+      import scala.reflect.runtime.currentMirror
+      import scala.tools.reflect.ToolBox
+      val tb = currentMirror.mkToolBox()
+      tb.eval(tb.parse("new { val f = org.komamitsu.fluency.Fluency.defaultFluency}"))
+    }
+  }
 }
