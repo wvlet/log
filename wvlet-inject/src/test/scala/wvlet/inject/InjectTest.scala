@@ -188,6 +188,15 @@ object ServiceMixinExample {
   class NestedClassInjection {
     val nest = inject[Nest1]
   }
+
+  trait AbstractModule {
+    def hello : Unit
+  }
+
+  trait ConcreteModule extends AbstractModule with LogSupport {
+    def hello { info("hello!") }
+  }
+
 }
 
 import wvlet.inject.ServiceMixinExample._
@@ -317,6 +326,13 @@ class InjectTest extends WvletSpec {
       c.obj shouldNot be (null)
 
       s.build[NestedClassInjection]
+    }
+
+    "build abstract type that has concrete bindign" taggedAs("abstract") in {
+      val h = new Inject
+      h.bind[AbstractModule].to[ConcreteModule]
+      val s = h.newSession
+      s.build[AbstractModule]
     }
   }
 }
