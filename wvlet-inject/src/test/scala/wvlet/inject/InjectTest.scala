@@ -348,7 +348,7 @@ class InjectTest extends WvletSpec {
       m.hello
     }
 
-    "built a trait bound to singleton" taggedAs("singleton") in {
+    "build a trait bound to singleton" taggedAs("singleton") in {
       val h = new Inject
       h.bind[AbstractModule].toInstance(ConcreteSingleton)
       val s = h.newSession
@@ -356,13 +356,13 @@ class InjectTest extends WvletSpec {
       m.hello
     }
 
-    "built a trait" taggedAs("trait") in {
+    "build a trait" taggedAs("trait") in {
       val h = new Inject
       val s = h.newSession
       val m = s.build[NonAbstractModule]
     }
 
-    "built a trait to singleton" taggedAs("trait-singleton") in {
+    "build a trait to singleton" taggedAs("trait-singleton") in {
       val h = new Inject
       h.bind[NonAbstractModule].toInstance(SingletonOfNonAbstractModules)
       val s = h.newSession
