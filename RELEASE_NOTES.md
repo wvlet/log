@@ -1,5 +1,12 @@
 Release Notes
 ====
+2016-08-19 0.19
+ * Show error message when an object cannot build 
+ * Allow building concreate classes that have inject[X] parameter
+
+2016-08-18 0.18
+ * Fix eager singleton initialization
+
 2016-08-16 0.17
  * Allow overriding Config using java.util.Properties
  * Improved test coverage of wvlet-log

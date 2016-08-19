@@ -172,12 +172,22 @@ object ServiceMixinExample {
   }
 
   trait Nest1 extends LogSupport {
-    info("instanciated Nest1")
+    info("instantiated Nest1")
     val nest2 = inject[Nest2]
   }
 
-  class Nest2()
+  class Nest2 extends LogSupport {
+    info("instantiated Nest2")
+  }
 
+
+  class ClassInjection {
+    val obj = inject[HeavyObject]
+  }
+
+  class NestedClassInjection {
+    val nest = inject[Nest1]
+  }
 }
 
 import wvlet.inject.ServiceMixinExample._
@@ -298,6 +308,15 @@ class InjectTest extends WvletSpec {
       val h = new Inject
       val c = h.newSession
       c.build[Nested]
+    }
+
+    "support injecting to a class" in {
+      val h = new Inject
+      val s = h.newSession
+      val c = s.build[ClassInjection]
+      c.obj shouldNot be (null)
+
+      s.build[NestedClassInjection]
     }
   }
 }
