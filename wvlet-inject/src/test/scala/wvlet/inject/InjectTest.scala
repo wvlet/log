@@ -188,6 +188,27 @@ object ServiceMixinExample {
   class NestedClassInjection {
     val nest = inject[Nest1]
   }
+
+  trait AbstractModule {
+    def hello : Unit
+  }
+
+  trait ConcreteModule extends AbstractModule with LogSupport {
+    def hello { info("hello!") }
+  }
+
+  object ConcreteSingleton extends AbstractModule with LogSupport {
+    def hello { info("hello singleton!") }
+  }
+
+  trait NonAbstractModule extends LogSupport {
+    info(s"This should be built")
+  }
+
+  object SingletonOfNonAbstractModules extends NonAbstractModule {
+    info("Hello singleton")
+  }
+
 }
 
 import wvlet.inject.ServiceMixinExample._
@@ -318,5 +339,37 @@ class InjectTest extends WvletSpec {
 
       s.build[NestedClassInjection]
     }
+
+    "build abstract type that has concrete binding" taggedAs("abstract") in {
+      val h = new Inject
+      h.bind[AbstractModule].to[ConcreteModule]
+      val s = h.newSession
+      val m = s.build[AbstractModule]
+      m.hello
+    }
+
+    "build a trait bound to singleton" taggedAs("singleton") in {
+      val h = new Inject
+      h.bind[AbstractModule].toInstance(ConcreteSingleton)
+      val s = h.newSession
+      val m = s.build[AbstractModule]
+      m.hello
+    }
+
+    "build a trait" taggedAs("trait") in {
+      val h = new Inject
+      val s = h.newSession
+      val m = s.build[NonAbstractModule]
+    }
+
+    "build a trait to singleton" taggedAs("trait-singleton") in {
+      val h = new Inject
+      h.bind[NonAbstractModule].toInstance(SingletonOfNonAbstractModules)
+      val s = h.newSession
+
+      val m = s.build[NonAbstractModule]
+      m shouldBe SingletonOfNonAbstractModules
+    }
+
   }
 }
