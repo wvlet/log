@@ -116,8 +116,9 @@ lazy val wvletInject =
   Project(id = "wvlet-inject", base = file("wvlet-inject")).settings(
     buildSettings,
     description := "wvlet dependency injection library",
+    resolvers += Resolver.sonatypeRepo("releases"),
     libraryDependencies ++= Seq(
-      "org.komamitsu" % "fluency" % "0.0.12" % "test"
+      "org.xerial.thirdparty" % "fluency" % "0.0.13-hotfix" % "test"
     )
   ).dependsOn(wvletObj, wvletLog, wvletTest % "test->compile")
 

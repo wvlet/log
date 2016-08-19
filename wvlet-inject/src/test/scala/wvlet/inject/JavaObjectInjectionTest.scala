@@ -46,9 +46,7 @@ class JavaObjectInjectionTest extends WvletSpec {
       val service = s.build[FluencyLogging]
     }
 
-    "inject Fluency in nested scope" ignore {
-      Logger("wvlet.inject").setLogLevel(LogLevel.TRACE)
-
+    "inject Fluency in nested scope" in {
       val i = new Inject
       i.bind[Fluency].toInstance(Fluency.defaultFluency)
       val s = i.newSession
@@ -59,7 +57,7 @@ class JavaObjectInjectionTest extends WvletSpec {
       import scala.reflect.runtime.currentMirror
       import scala.tools.reflect.ToolBox
       val tb = currentMirror.mkToolBox()
-      tb.eval(tb.parse("new { val f = org.komamitsu.fluency.Fluency.defaultFluency}"))
+      tb.eval(tb.parse("new { val f : org.komamitsu.fluency.Fluency = null }"))
     }
   }
 }
