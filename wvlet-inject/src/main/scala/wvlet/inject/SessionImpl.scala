@@ -119,9 +119,7 @@ private[inject] class SessionImpl(binding: Seq[Binding], listener: Seq[SessionLi
           // TODO use Scala macros or cache to make it efficient
           val parsed = tb.parse(code)
           trace(s"Parsed the code: ${parsed}")
-          val compiled = tb.compile(parsed)
-          trace(s"Compiled the code: ${compiled}")
-          val f = compiled().asInstanceOf[Session => Any]
+          val f = tb.eval(parsed).asInstanceOf[Session => Any]
           trace(s"Eval: ${f}")
           val obj = f.apply(this)
           registerInjectee(t, obj)
