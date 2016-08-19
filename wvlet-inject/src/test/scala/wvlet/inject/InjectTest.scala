@@ -16,7 +16,7 @@ package wvlet.inject
 import java.io.PrintStream
 import java.util.concurrent.atomic.AtomicInteger
 
-import wvlet.log.LogSupport
+import wvlet.log.{LogLevel, LogSupport}
 import wvlet.obj.ObjectType
 import wvlet.obj.tag.@@
 import wvlet.test.WvletSpec
@@ -131,6 +131,12 @@ object ServiceMixinExample {
     val initializedTime = System.nanoTime()
   }
 
+  trait EagerSingletonWithInject extends LogSupport {
+    info("initialized")
+    val heavy = inject[HeavyObject]
+    val initializedTime = System.nanoTime()
+  }
+
   class ClassWithContext(val c: Session) extends FortunePrinterMixin with LogSupport {
     //info(s"context ${c}") // we should access context since Scala will remove private field, which is never used
   }
@@ -217,6 +223,17 @@ class InjectTest extends WvletSpec {
       s.initializedTime should be < current
     }
 
+    "create single with inject eagerly" in {
+      val start = System.nanoTime()
+      val h = new Inject
+      h.bind[EagerSingletonWithInject].toEagerSingleton
+      val c = h.newSession
+      val current = System.nanoTime()
+      val s = c.get[EagerSingletonWithInject]
+
+      s.initializedTime should be > start
+      s.initializedTime should be < current
+    }
 
     "found cyclic dependencies" in {
       val c = new Inject().newSession
