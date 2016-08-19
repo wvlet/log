@@ -117,6 +117,7 @@ lazy val wvletInject =
     buildSettings,
     description := "wvlet dependency injection library",
     libraryDependencies ++= Seq(
+      "org.komamitsu" % "fluency" % "0.0.12" % "test"
     )
   ).dependsOn(wvletObj, wvletLog, wvletTest % "test->compile")
 
