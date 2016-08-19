@@ -121,7 +121,9 @@ class Inject extends LogSupport {
     }
     val keyIndex : Map[ObjectType, Int] = originalBindings.map(_.from).zipWithIndex.map(x => x._1 -> x._2).toMap
     val sortedBindings = effectiveBindings.toSeq.sortBy(x => keyIndex(x.from))
-    new SessionImpl(sortedBindings, listener.result())
+    val s = new SessionImpl(sortedBindings, listener.result())
+    s.init()
+    s
   }
 
   def addBinding(b: Binding): Inject = {

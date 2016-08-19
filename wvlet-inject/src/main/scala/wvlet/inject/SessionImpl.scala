@@ -33,12 +33,14 @@ private[inject] class SessionImpl(binding: Seq[Binding], listener: Seq[SessionLi
 
   private lazy val singletonHolder: collection.mutable.Map[ObjectType, Any] = new ConcurrentHashMap[ObjectType, Any]()
 
-  // Initialize eager singleton
-  binding.collect {
-    case s@SingletonBinding(from, to, eager) if eager =>
-      singletonHolder.getOrElseUpdate(to, buildInstance(to, Set(to)))
-    case InstanceBinding(from, obj) =>
-      registerInjectee(from, obj)
+  private[inject] def init() = {
+    // Initialize eager singleton
+    binding.collect {
+      case s@SingletonBinding(from, to, eager) if eager =>
+        singletonHolder.getOrElseUpdate(to, buildInstance(to, Set(to)))
+      case InstanceBinding(from, obj) =>
+        registerInjectee(from, obj)
+    }
   }
 
   def get[A](implicit ev: ru.WeakTypeTag[A]): A = {
@@ -89,6 +91,7 @@ private[inject] class SessionImpl(binding: Seq[Binding], listener: Seq[SessionLi
           newInstance(p.valueType, seen)
         }
         trace(s"Build a new instance for ${t}")
+        // Add TODO: enable injecting Session to concrete classes
         val obj = schema.constructor.newInstance(args)
         registerInjectee(t, obj)
       case None =>
