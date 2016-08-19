@@ -1,5 +1,8 @@
 Release Notes
 ====
+2016-08-19 0.20
+ * Support building abstract types (if possible)
+
 2016-08-19 0.19
  * Show error message when an object cannot build 
  * Allow building concreate classes that have inject[X] parameter
