@@ -209,6 +209,10 @@ object ServiceMixinExample {
     info("Hello singleton")
   }
 
+  trait NestedAbstractModule {
+    val m = inject[AbstractModule]
+  }
+
 }
 
 import wvlet.inject.ServiceMixinExample._
@@ -346,6 +350,14 @@ class InjectTest extends WvletSpec {
       val s = h.newSession
       val m = s.build[AbstractModule]
       m.hello
+    }
+
+    "build nested abstract type that has concrete binding" taggedAs("nested-abstract") in {
+      val h = new Inject
+      h.bind[AbstractModule].to[ConcreteModule]
+      val s = h.newSession
+      val m = s.build[NestedAbstractModule]
+      m.m.hello
     }
 
     "build a trait bound to singleton" taggedAs("singleton") in {
