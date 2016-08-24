@@ -20,7 +20,7 @@ With wvlet, you can:
 | -------------- | --------------------------------------- | -------- |
 | wvlet-log      | Logging utility                          | [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.wvlet/wvlet-log_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.wvlet/wvlet-log_2.11) |
 | wvlet-obj   |  Object schema inspection library   | [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.wvlet/wvlet-obj_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.wvlet/wvlet-obj_2.11) |
-| wvlet-inject      | Dependency injection library     | [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.wvlet/wvlet-inject_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.wvlet/wvlet-inject_2.11) |
+| wvlet-inject      | Dependency injection library     | Moved to [Airframe](https://github.com/wvlet/airframe) |
 | wvlet-jmx   | JMX utility| [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.wvlet/wvlet-jmx_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.wvlet/wvlet-jmx_2.11) |
 | wvlet-config    | Configuration loader from Yaml          | [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.wvlet/wvlet-config_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.wvlet/wvlet-config_2.11) |
 | wvlet-opts    | Command line option parser          | [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.wvlet/wvlet-opts_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.wvlet/wvlet-opts_2.11) |
