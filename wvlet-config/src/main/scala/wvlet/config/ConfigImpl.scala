@@ -13,7 +13,6 @@
  */
 package wvlet.config
 
-import wvlet.inject.Inject
 import wvlet.log.LogSupport
 import wvlet.obj.ObjectType
 
@@ -32,12 +31,6 @@ class ConfigImpl(holder: Seq[ConfigHolder]) extends Config with LogSupport {
         x.asInstanceOf[ConfigType]
       case None =>
         throw new IllegalArgumentException(s"No [${t}] value is found")
-    }
-  }
-
-  override def bindConfigs(i: Inject): Unit = {
-    for (c <- holder) {
-      i.bind(c.tpe).toInstance(c.value)
     }
   }
 
