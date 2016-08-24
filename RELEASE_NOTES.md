@@ -1,5 +1,9 @@
 Release Notes
 ====
+0.21
+ * Removed wvlet-inject in favor of [Airframe](https://github.com/wvlet/airframe)
+ * Removed Config.bindConfigs(Inject) since it should be done outside wvlet-config 
+
 2016-08-19 0.20
  * Support building abstract types (if possible)
 
