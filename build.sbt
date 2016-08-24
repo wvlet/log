@@ -62,7 +62,7 @@ lazy val wvlet =
     publish := {},
     publishLocal := {},
     packExclude := Seq("wvlet")
-  ).aggregate(wvletCore, wvletObj, wvletInject, wvletOpts, wvletTest, wvletLog, wvletConfig, wvletJmx) //, wvletLens, wvletJdbc, wvletDataframe, wvletRest, wvletTest, wvletCui)
+  ).aggregate(wvletCore, wvletObj, wvletOpts, wvletTest, wvletLog, wvletConfig, wvletJmx) //, wvletLens, wvletJdbc, wvletDataframe, wvletRest, wvletTest, wvletCui)
 
 lazy val wvletLog =
   Project(id = "wvlet-log", base = file("wvlet-log")).settings(
@@ -89,9 +89,10 @@ lazy val wvletConfig =
     buildSettings,
     description := "wvlet configuration module",
     libraryDependencies ++= Seq(
-      "org.yaml" % "snakeyaml" % "1.14"
+      "org.yaml" % "snakeyaml" % "1.14",
+      "org.wvlet" %% "airframe" % "0.2"
     )
-  ).dependsOn(wvletObj, wvletInject, wvletTest % "test->compile")
+  ).dependsOn(wvletObj, wvletTest % "test->compile")
 
 lazy val wvletCore =
   Project(id = "wvlet-core", base = file("wvlet-core")).settings(
@@ -112,16 +113,6 @@ lazy val wvletObj =
     )
   ).dependsOn(wvletLog, wvletTest % "test->compile")
 
-lazy val wvletInject =
-  Project(id = "wvlet-inject", base = file("wvlet-inject")).settings(
-    buildSettings,
-    description := "wvlet dependency injection library",
-    resolvers += Resolver.sonatypeRepo("releases"),
-    libraryDependencies ++= Seq(
-      "org.xerial.thirdparty" % "fluency" % "0.0.13-hotfix" % "test"
-    )
-  ).dependsOn(wvletObj, wvletLog, wvletTest % "test->compile")
-
 lazy val wvletRest =
   Project(id = "wvlet-rest", base = file("wvlet-rest")).settings(
     buildSettings,
@@ -139,7 +130,6 @@ lazy val wvletOpts =
     buildSettings,
     description := "wvlet command-line option parser",
     libraryDependencies ++= Seq(
-
     )
   ) dependsOn(wvletObj, wvletTest % "test->compile")
 
