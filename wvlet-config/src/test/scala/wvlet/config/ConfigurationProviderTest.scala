@@ -13,7 +13,7 @@
  */
 package wvlet.config
 
-import wvlet.inject.{Inject, _}
+import wvlet.airframe._
 import wvlet.test.WvletSpec
 
 object ConfigurationProviderTest {
@@ -21,9 +21,8 @@ object ConfigurationProviderTest {
   case class ConfigA(id: Int, fullName: String)
 
   trait MyApp {
-    val configA = inject[ConfigA]
+    val configA = bind[ConfigA]
   }
-
 }
 
 import wvlet.config.ConfigurationProviderTest._
@@ -34,21 +33,18 @@ import wvlet.config.ConfigurationProviderTest._
 class ConfigurationProviderTest extends WvletSpec {
 
   "ConfigurationProvider" should {
-
     "provide config objects" in {
-
       val config =
         Config.newBuilder("staging")
         .registerFromYaml[ConfigA]("wvlet-config/src/test/resources/myconfig.yml")
         .build
 
-      val i = new Inject
-      config.bindConfigs(i)
-      val c = i.newSession
-
-      val myapp = c.build[MyApp]
+      var d = newDesign
+      for(c <- config.getAll) {
+        d = d.bind(c.tpe).asInstanceOf[Binder[Any]].toInstance(c.value)
+      }
+      val myapp = d.newSession.build[MyApp]
       myapp.configA shouldBe ConfigA(2, "staging-config")
     }
-
   }
 }
