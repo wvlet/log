@@ -1,5 +1,8 @@
 Release Notes
 ====
+0.22
+ * Add Logger.scheduleLogLevelScan
+
 0.21
  * Removed wvlet-inject in favor of [Airframe](https://github.com/wvlet/airframe)
  * Removed Config.bindConfigs(Inject) since it should be done outside wvlet-config 
