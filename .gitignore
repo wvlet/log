@@ -7,3 +7,4 @@ vendor/bundle
 atlassian-ide-plugin.xml
 target
 result
+src/test/resources/log-test.properties
