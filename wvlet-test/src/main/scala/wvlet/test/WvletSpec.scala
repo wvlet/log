@@ -31,5 +31,8 @@ trait WvletSpec extends WordSpec
   // Add source code location to the debug logs
   Logger.setDefaultFormatter(SourceCodeLogFormatter)
 
+  // Periodically scan log level file
+  Logger.scheduleLogLevelScan
+
   implicit def toTag(s:String) = Tag(s)
 }

@@ -16,7 +16,7 @@ package wvlet.core.io
 import java.io.{BufferedInputStream, File, FileInputStream, InputStream}
 import java.nio.file.Path
 
-import wvlet.core.io.IOUtil._
+import wvlet.log.io.IOUtil._
 
 /**
   *

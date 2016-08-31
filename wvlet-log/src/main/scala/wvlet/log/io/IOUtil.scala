@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package wvlet.core.io
+package wvlet.log.io
 
 import java.io._
 import java.net.ServerSocket
@@ -37,28 +37,34 @@ object IOUtil {
     }
   }
 
-  def findPath(path: String): File = findPath(new File(path))
+  def findPath(path: String): Option[File] = findPath(new File(path))
 
-  def findPath(path: File): File = {
+  def findPath(path: File): Option[File] = {
     if (path.exists()) {
-      path
+      Some(path)
     }
     else {
       val defaultPath = new File(new File(System.getProperty("prog.home", "")), path.getPath)
-      if (!defaultPath.exists()) {
-        throw new FileNotFoundException(s"${path} is not found")
+      if (defaultPath.exists()) {
+        Some(defaultPath)
       }
-      defaultPath
+      else {
+        None
+      }
     }
   }
 
-  def readAsString(resourcePath: String) = {
+  def readAsString(resourcePath: String) : String = {
     require(resourcePath != null, s"resourcePath is null")
     val file = findPath(new File(resourcePath))
-    if (!file.exists()) {
-      throw new FileNotFoundException(s"${file} is not found")
+    if(file.isEmpty) {
+      throw new FileNotFoundException(s"Not found ${resourcePath}")
     }
-    readFully(new FileInputStream(file)) {
+    readAsString(new FileInputStream(file.get))
+  }
+
+  def readAsString(in:InputStream) : String = {
+    readFully(in) {
       data => new String(data, StandardCharsets.UTF_8)
     }
   }
