@@ -112,15 +112,14 @@ class ConfigBuilder(env: Environment, configPaths: Seq[String]) extends LogSuppo
     this
   }
 
-  def register[ConfigType](config: ConfigType)(implicit tag: ru.TypeTag[ConfigType]): ConfigBuilder = {
-    val tpe = ObjectType.ofTypeTag(tag)
+  def register[ConfigType: ru.TypeTag](config: ConfigType): ConfigBuilder = {
+    val tpe = ObjectType.ofTypeTag(implicitly[ru.TypeTag[ConfigType]])
     configHolder += ConfigHolder(env.env, tpe, config)
     this
   }
 
-  def registerFromYaml[ConfigType](configFilePath: String)
-                                  (implicit tag: ru.TypeTag[ConfigType]): ConfigBuilder = {
-    val tpe = ObjectType.ofTypeTag(tag)
+  def registerFromYaml[ConfigType](configFilePath: String): ConfigBuilder = {
+    val tpe = ObjectType.ofTypeTag(implicitly[ru.TypeTag[ConfigType]])
     val cls = tpe.rawType
     val realPath = findConfigFile(configFilePath)
 
