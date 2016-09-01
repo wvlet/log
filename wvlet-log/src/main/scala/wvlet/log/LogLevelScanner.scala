@@ -15,8 +15,10 @@ package wvlet.log
 
 import java.io.File
 import java.util.Properties
-import java.util.concurrent.{Executors, ThreadFactory, TimeUnit}
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
+import wvlet.log.LogLevelScanner.ScannerState
 import wvlet.log.io.{IOUtil, Resource}
 
 import scala.concurrent.duration.Duration
@@ -71,32 +73,91 @@ object LogLevelScanner {
         lastScannedMillis
     }
   }
+
+
+
+  private[log] sealed trait ScannerState
+  private[log] object RUNNING extends ScannerState
+  private[log] object STOPPING extends ScannerState
+  private[log] object STOPPED extends ScannerState
+
 }
 
-private[log] class LogLevelScanner(val logLevelFileCandidates: Seq[String], val scanInterval: Duration) extends Runnable {
+case class LogLevelScannerConfig(logLevelFileCandidates: Seq[String],
+                                 scanInterval: Duration = Duration(1, TimeUnit.MINUTES))
 
-  private val executor = Executors.newScheduledThreadPool(1, new ThreadFactory {
-    override def newThread(r: Runnable): Thread = {
-      val t = new Thread(r)
-      t.setName("LogLevelScanner")
-      // Enable terminating JVM without shutting down this executor
-      t.setDaemon(true)
-      t
+import wvlet.log.LogLevelScanner._
+
+private[log] class LogLevelScanner extends Guard {
+  scanner =>
+  private val config: AtomicReference[LogLevelScannerConfig] = new AtomicReference(LogLevelScannerConfig(Seq.empty))
+  private val configChanged                                  = newCondition
+
+  def getConfig: LogLevelScannerConfig = config.get()
+  def setConfig(config: LogLevelScannerConfig) {
+    guard {
+      val prev = this.config.get()
+      if (prev.logLevelFileCandidates != config.logLevelFileCandidates) {
+        lastScannedMillis = None
+      }
+      this.config.set(config)
+      configChanged.signalAll()
     }
-  })
-
-  def start() {
-    executor.scheduleAtFixedRate(this, 0, scanInterval.toMillis, TimeUnit.MILLISECONDS)
   }
 
-  def stop() {
-    // No need to wait the thread termination here
-    executor.shutdown()
+  private val state = new AtomicReference[ScannerState](STOPPED)
+
+  def start {
+    guard {
+      state.compareAndSet(STOPPING, RUNNING)
+      if (state.compareAndSet(STOPPED, RUNNING)) {
+        // Create a new thread if the previous thread is terminated
+        new LogLevelScannerThread().start
+      }
+    }
   }
 
+  def stop {
+    guard {
+      state.set(STOPPING)
+    }
+  }
+
+  private var lastScheduledMillis: Option[Long] = None
   private var lastScannedMillis: Option[Long] = None
 
-  def run {
-    lastScannedMillis = LogLevelScanner.scan(logLevelFileCandidates, lastScannedMillis)
+  private def run {
+    // We need to exit here so that the thread can be automatically discarded after the scan interval has passed
+    // Otherwise, the thread remains in the classloader(s) if used for running test cases
+    while (!state.compareAndSet(STOPPING, STOPPED)) {
+      // Periodically run
+      val currentTimeMillis = System.currentTimeMillis()
+      val scanIntervalMillis = getConfig.scanInterval.toMillis
+      if (lastScheduledMillis.isEmpty || currentTimeMillis - lastScheduledMillis.get > scanIntervalMillis) {
+        val updatedLastScannedMillis = scan(getConfig.logLevelFileCandidates, lastScannedMillis)
+        guard {
+          lastScannedMillis = updatedLastScannedMillis
+        }
+        lastScheduledMillis = Some(currentTimeMillis)
+      }
+      // wait until next scheduled time
+      val sleepTime = scanIntervalMillis - math.max(0, math.min(scanIntervalMillis, currentTimeMillis - lastScheduledMillis.get))
+      guard {
+        if (configChanged.await(sleepTime, TimeUnit.MILLISECONDS)) {
+          // awaken due to config change
+        }
+      }
+    }
+  }
+
+  private class LogLevelScannerThread extends Thread {
+    setName("WvletLogLevelScanner")
+    // Enable terminating JVM without shutting down this executor
+    setDaemon(true)
+
+    override def run(): Unit = {
+      scanner.run
+    }
   }
 }
+
