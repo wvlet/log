@@ -46,4 +46,6 @@ package object tag {
   implicit class AndTagger[T, U](t: T @@ U) {
     def andTaggedWith[V]: T @@ (U with V) = t.asInstanceOf[T @@ (U with V)]
   }
+
+  implicit def toTaggedType[A, Tag](obj: A): A @@ Tag = obj.taggedWith[Tag]
 }

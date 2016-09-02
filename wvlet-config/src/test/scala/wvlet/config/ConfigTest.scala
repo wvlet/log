@@ -17,7 +17,7 @@ import java.io.FileOutputStream
 import java.util.Properties
 
 import wvlet.log.io.IOUtil
-import wvlet.obj.tag.@@
+import wvlet.obj.tag._
 import wvlet.test.WvletSpec
 
 trait AppScope
@@ -89,8 +89,8 @@ class ConfigTest extends WvletSpec {
     "override values with properties" taggedAs ("props") in {
       val p = new Properties
       p.setProperty("sample.id", "10")
-      p.setProperty("appscope.sample.id", "2")
-      p.setProperty("appscope.sample.full_name", "hellohello")
+      p.setProperty("sample@appscope.id", "2")
+      p.setProperty("sample@appscope.full_name", "hellohello")
 
       val c1 = Config(env = "devault", configPaths = configPaths)
                .register[SampleConfig](SampleConfig(1, "hello"))
@@ -115,7 +115,7 @@ class ConfigTest extends WvletSpec {
 
         val c2 = Config(env = "devault", configPaths = "target")
                  .register[SampleConfig](SampleConfig(1, "hello"))
-                 .register[SampleConfig @@ AppScope](SampleConfig(1, "hellohello").asInstanceOf[SampleConfig @@ AppScope])
+                 .register[SampleConfig @@ AppScope](SampleConfig(1, "hellohello"))
                  .overrideWithPropertiesFile(file.getName)
 
         new ConfigSpec(c2)

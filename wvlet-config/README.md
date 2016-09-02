@@ -47,10 +47,10 @@ development:
 
 **config.properties**:
 ```
-# ([tag].)?[prefix].[param]=(value)
-access.log.file=/path/to/access.log
-db.log.file=/path/to/db.log
-db.log.max_files=250
+# [prefix](@[tag])?.[param]=(value)
+log@access.file=/path/to/access.log
+log@db.file=/path/to/db.log
+log@db.log.max_files=250
 server.host=mydomain.com
 
 
