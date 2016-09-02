@@ -16,7 +16,7 @@ package wvlet.config
 import java.{util => ju}
 
 import org.yaml.snakeyaml.Yaml
-import wvlet.config.IOUtil._
+import wvlet.log.io.IOUtil._
 import wvlet.log.LogSupport
 import wvlet.obj.ObjectBuilder
 

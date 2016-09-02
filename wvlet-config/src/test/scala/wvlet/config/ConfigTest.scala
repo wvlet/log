@@ -16,6 +16,7 @@ package wvlet.config
 import java.io.FileOutputStream
 import java.util.Properties
 
+import wvlet.log.io.IOUtil
 import wvlet.obj.tag.@@
 import wvlet.test.WvletSpec
 
@@ -32,9 +33,8 @@ class ConfigTest extends WvletSpec {
   val configPaths = Seq("wvlet-config/src/test/resources")
 
   def loadConfig(env: String) =
-    Config.newBuilder(env = env, configPaths = configPaths)
+    Config(env = env, configPaths = configPaths)
     .registerFromYaml[SampleConfig]("myconfig.yml")
-    .build
 
   "Config" should {
     "map yaml file into a case class" in {
@@ -54,10 +54,9 @@ class ConfigTest extends WvletSpec {
     }
 
     "allow override" in {
-      val config = Config.newBuilder(env = "staging", configPaths = configPaths)
+      val config = Config(env = "staging", configPaths = configPaths)
                    .registerFromYaml[SampleConfig]("myconfig.yml")
                    .register[SampleConfig](SampleConfig(10, "hello"))
-                   .build
 
       val c = config.of[SampleConfig]
       c.id shouldBe 10
@@ -65,13 +64,10 @@ class ConfigTest extends WvletSpec {
     }
 
     "create a new config based on existing one" in {
-      val config = Config.newBuilder(env = "default", configPaths = configPaths)
+      val config = Config(env = "default", configPaths = configPaths)
                    .registerFromYaml[SampleConfig]("myconfig.yml")
-                   .build
 
-      val config2 = Config.newBuilder(env = "production", configPaths = configPaths)
-                    .addAll(config)
-                    .build
+      val config2 = Config(env = "production", configPaths = configPaths) ++ config
 
       val c2 = config2.of[SampleConfig]
       c2.id shouldBe 1
@@ -79,10 +75,9 @@ class ConfigTest extends WvletSpec {
     }
 
     "read tagged type" taggedAs ("tag") in {
-      val config = Config.newBuilder(env = "default", configPaths = configPaths)
+      val config = Config(env = "default", configPaths = configPaths)
                    .registerFromYaml[SampleConfig @@ AppScope]("myconfig.yml")
                    .register[SampleConfig @@ SessionScope](SampleConfig(2, "session").asInstanceOf[SampleConfig @@ SessionScope])
-                   .build
 
       val c = config.of[SampleConfig @@ AppScope]
       c shouldBe SampleConfig(1, "default-config")
@@ -97,11 +92,10 @@ class ConfigTest extends WvletSpec {
       p.setProperty("appscope.sample.id", "2")
       p.setProperty("appscope.sample.full_name", "hellohello")
 
-      val c1 = Config.newBuilder(env = "devault", configPaths = configPaths)
+      val c1 = Config(env = "devault", configPaths = configPaths)
                .register[SampleConfig](SampleConfig(1, "hello"))
                .register[SampleConfig @@ AppScope](SampleConfig(1, "hellohello").asInstanceOf[SampleConfig @@ AppScope])
                .overrideWithProperties(p)
-               .build
 
       class ConfigSpec(config:Config) {
         val c = config.of[SampleConfig]
@@ -119,11 +113,10 @@ class ConfigTest extends WvletSpec {
         p.store(f, "config prop")
         f.close()
 
-        val c2 = Config.newBuilder(env = "devault", configPaths = "target")
+        val c2 = Config(env = "devault", configPaths = "target")
                  .register[SampleConfig](SampleConfig(1, "hello"))
                  .register[SampleConfig @@ AppScope](SampleConfig(1, "hellohello").asInstanceOf[SampleConfig @@ AppScope])
                  .overrideWithPropertiesFile(file.getName)
-                 .build
 
         new ConfigSpec(c2)
       }

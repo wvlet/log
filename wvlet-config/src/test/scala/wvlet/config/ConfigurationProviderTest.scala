@@ -33,15 +33,14 @@ import wvlet.config.ConfigurationProviderTest._
 class ConfigurationProviderTest extends WvletSpec {
 
   "ConfigurationProvider" should {
-    "provide config objects" in {
+    "provide config objects with Airframe" in {
       val config =
-        Config.newBuilder("staging")
+        Config("staging")
         .registerFromYaml[ConfigA]("wvlet-config/src/test/resources/myconfig.yml")
-        .build
 
       var d = newDesign
       for(c <- config.getAll) {
-        d = d.bind(c.tpe).asInstanceOf[Binder[Any]].toInstance(c.value)
+        d = d.bind(c.tpe).toInstance(c.value)
       }
       val myapp = d.newSession.build[MyApp]
       myapp.configA shouldBe ConfigA(2, "staging-config")

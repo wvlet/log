@@ -4,9 +4,12 @@ wvlet-config
 ## Application configuration flow
 
 - User specifies an environment (e.g., `test`, `staging`, `production`, etc)
-- Read configuration file (YAML)
-  - wvlet-config will search config files from a given `configpath(s)`
-  - If no configuration for the target environment is found, it uses `default` configuration.
+- Read a configuration file (YAML)
+  - wvlet-config will search `configpath(s)` to find the YAML file  
+  - If the target YAML file is not found, it uses the default configuration
+  - When YAML file is found, it searches for configuration for the target environment.
+       - If no configuration for the target environment is found, uses `default` environment configuration. 
+       - If `default` environment is also not found, it uses the provided default object
 
 - Supply additional configurations (e.g., confidential information such as password, apikey, etc.)
   - Read these configurations in a secure manner and create a `Properties` object.
@@ -49,6 +52,8 @@ access.log.file=/path/to/access.log
 db.log.file=/path/to/db.log
 db.log.max_files=250
 server.host=mydomain.com
+
+
 server.password=xxxxxyyyyyy
 ```
 
@@ -67,12 +72,11 @@ trait Access
 trait Db
 
 val config = 
-  Config.newBuilder(env="development", configPaths="./config")
+  Config(env="development", configPaths="./config")
     .registerFromYaml[LogConfig @@ Access]("access-log.yml")
     .registerFromYaml[LogConfig @@ Db]("db-log.yml")
     .registerFromYaml[ServerConfig]("server.yml")
     .overrideWithPropertiesFile("config.properties")
-    .build
     
 val accessLogConfig = config.of[LogConfig @@ Access]
 // LogConfig("/path/to/access.log",50,104857600)
