@@ -38,24 +38,13 @@ case class ConfigPaths(configPaths: Seq[String]) extends LogSupport {
   }
 }
 
-case class Environment(env: String, defaultEnv: String = "default") {
-  override def toString = env
-}
-
 object Config extends LogSupport {
   private def defaultConfigPath = Seq(
     ".", // current directory
-    sys.props.getOrElse("prog.home", "") // program home
+    sys.props.getOrElse("prog.home", "") // program home for wvlet-launcher
   )
 
-  def apply(env: String, configPaths: String): Config =
-    Config(Environment(env), cleanupConfigPaths(configPaths.split(":")), Vector.empty)
-
-  def apply(env: String, configPaths: Seq[String] = defaultConfigPath): Config =
-    Config(Environment(env), cleanupConfigPaths(configPaths), Vector.empty)
-
-  def apply(env: Environment, configPaths: Seq[String]): Config =
-    Config(env, cleanupConfigPaths(configPaths), Vector.empty)
+  def apply(env:String, defaultEnv:String = "default", configPaths:Seq[String]=defaultConfigPath): Config = Config(ConfigEnv(env, "default", configPaths), Vector.empty)
 
   private def cleanupConfigPaths(paths: Seq[String]) = {
     val b = Seq.newBuilder[String]
@@ -73,7 +62,23 @@ object Config extends LogSupport {
     }
   }
 }
-case class Config(env: Environment, configPaths: Seq[String], holder: Vector[ConfigHolder]) extends Iterable[ConfigHolder] with LogSupport {
+
+case class ConfigEnv(env: String, defaultEnv: String, configPaths: Seq[String]) {
+  def withConfigPaths(paths: Seq[String]): ConfigEnv = ConfigEnv(env, defaultEnv, paths)
+}
+
+case class Config private[config](env: ConfigEnv, holder: Vector[ConfigHolder]) extends Iterable[ConfigHolder] with LogSupport {
+
+  // Customization
+  def withEnv(newEnv: String, defaultEnv: String = "default"): Config = {
+    Config(ConfigEnv(newEnv, defaultEnv, env.configPaths), holder)
+  }
+
+  def withConfigPaths(paths: Seq[String]): Config = {
+    Config(env.withConfigPaths(paths), holder)
+  }
+
+  // Accessors to configurations
   def getAll: Seq[ConfigHolder] = holder
   override def iterator: Iterator[ConfigHolder] = holder.iterator
 
@@ -90,9 +95,9 @@ case class Config(env: Environment, configPaths: Seq[String], holder: Vector[Con
     }
   }
 
-  def +(holder: ConfigHolder): Config = Config(env, configPaths, this.holder :+ holder)
+  def +(holder: ConfigHolder): Config = Config(env, this.holder :+ holder)
   def ++(other: Config): Config = {
-    Config(env, configPaths, this.holder ++ other.holder)
+    Config(env, this.holder ++ other.holder)
   }
 
   def register[ConfigType: ru.TypeTag](config: ConfigType): Config = {
@@ -150,7 +155,7 @@ case class Config(env: Environment, configPaths: Seq[String], holder: Vector[Con
   }
 
   private def findConfigFile(name: String): Option[String] = {
-    configPaths
+    env.configPaths
     .map(p => new File(p, name))
     .find(_.exists())
     .map(_.getPath)

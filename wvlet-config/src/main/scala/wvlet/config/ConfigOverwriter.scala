@@ -107,7 +107,7 @@ object ConfigOverwriter extends LogSupport {
       warn(s"There are unused configuration properties: ${unusedProperties.mkString(",")}")
     }
 
-    Config(config.env, config.configPaths, newConfigs)
+    Config(config.env, newConfigs)
   }
 
 }

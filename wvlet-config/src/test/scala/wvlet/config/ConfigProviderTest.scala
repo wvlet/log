@@ -16,7 +16,7 @@ package wvlet.config
 import wvlet.airframe._
 import wvlet.test.WvletSpec
 
-object ConfigurationProviderTest {
+object ConfigProviderTest {
 
   case class ConfigA(id: Int, fullName: String)
 
@@ -25,12 +25,12 @@ object ConfigurationProviderTest {
   }
 }
 
-import wvlet.config.ConfigurationProviderTest._
+import wvlet.config.ConfigProviderTest._
 
 /**
   *
   */
-class ConfigurationProviderTest extends WvletSpec {
+class ConfigProviderTest extends WvletSpec {
 
   "ConfigurationProvider" should {
     "provide config objects with Airframe" in {

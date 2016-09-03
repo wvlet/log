@@ -113,7 +113,7 @@ class ConfigTest extends WvletSpec {
         p.store(f, "config prop")
         f.close()
 
-        val c2 = Config(env = "devault", configPaths = "target")
+        val c2 = Config(env = "default", configPaths = Seq("target"))
                  .register[SampleConfig](SampleConfig(1, "hello"))
                  .register[SampleConfig @@ AppScope](SampleConfig(1, "hellohello"))
                  .overrideWithPropertiesFile(file.getName)
