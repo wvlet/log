@@ -22,36 +22,54 @@ import wvlet.obj.{ObjectBuilder, ObjectSchema, ObjectType, TaggedObjectType}
 import scala.util.{Failure, Success, Try}
 
 /**
-  *
+  * Allow overwriting config objects with Java Properties
   */
 object ConfigOverwriter extends LogSupport {
 
-  private[config] def extractPrefix(t: ObjectType): ParamKey = {
+  private[config] case class Prefix(prefix:String, tag: Option[String])
+  private[config] case class ConfigKey(prefix: Prefix, param: String)
+  private[config] case class ConfigProperty(key: ConfigKey, v: Any)
+
+  private[config] def extractPrefix(t: ObjectType): Prefix = {
     def canonicalize(s: String): String = {
       val name = s.replaceAll("Config$", "")
       CanonicalNameFormatter.format(name)
     }
-
     t match {
       case TaggedObjectType(raw, base, taggedType) =>
-        ParamKey(canonicalize(base.name), Some(CanonicalNameFormatter.format(taggedType.name)))
+        Prefix(canonicalize(base.name), Some(CanonicalNameFormatter.format(taggedType.name)))
       case _ =>
-        ParamKey(canonicalize(t.name), None)
+        Prefix(canonicalize(t.name), None)
     }
   }
 
-  case class ParamKey(preefix:String, tag: Option[String])
-  case class ConfigParamKey(prefix: ParamKey, param: String)
-  case class ConfigParam(key: ConfigParamKey, v: Any)
+  private[config] def toConfigKey(propKey: String): ConfigKey = {
+    val c = propKey.split("\\.")
+    c.length match {
+      case l if l >= 2 =>
+        val prefixSplit = c(0).split("@+")
+        if(prefixSplit.length > 1) {
+          val param = CanonicalNameFormatter.format(c(1).mkString)
+          ConfigKey(Prefix(prefixSplit(0), Some(prefixSplit(1))), param)
+        }
+        else {
+          val prefix = c(0)
+          val param = CanonicalNameFormatter.format(c(1))
+          ConfigKey(Prefix(prefix, None), param)
+        }
+      case other =>
+        throw new IllegalArgumentException(s"${propKey} should have [prefix](@[tag])?.[param] format")
+    }
+  }
 
-  private[config] def configToProps(configHolder: ConfigHolder): Seq[ConfigParam] = {
+  private[config] def configToProps(configHolder: ConfigHolder): Seq[ConfigProperty] = {
     val prefix = extractPrefix(configHolder.tpe)
     val schema = ObjectSchema.of(configHolder.tpe)
-    val b = Seq.newBuilder[ConfigParam]
+    val b = Seq.newBuilder[ConfigProperty]
     for (p <- schema.parameters) yield {
-      val key = ConfigParamKey(prefix, CanonicalNameFormatter.format(p.name))
+      val key = ConfigKey(prefix, CanonicalNameFormatter.format(p.name))
       Try(p.get(configHolder.value)) match {
-        case Success(v) => b += ConfigParam(key, v)
+        case Success(v) => b += ConfigProperty(key, v)
         case Failure(e) =>
           warn(s"Failed to read parameter ${p} from ${configHolder}")
       }
@@ -59,38 +77,19 @@ object ConfigOverwriter extends LogSupport {
     b.result()
   }
 
-  private[config] def toConfigKey(propKey: String): ConfigParamKey = {
-    val c = propKey.split("\\.")
-    c.length match {
-      case l if l >= 2 =>
-        val prefixSplit = c(0).split("@")
-        if(prefixSplit.length > 1) {
-          val param = CanonicalNameFormatter.format(c(1).mkString)
-          ConfigParamKey(ParamKey(prefixSplit(0), Some(prefixSplit(1))), param)
-        }
-        else {
-          val prefix = c(0)
-          val param = CanonicalNameFormatter.format(c(1))
-          ConfigParamKey(ParamKey(prefix, None), param)
-        }
-      case other =>
-        throw new IllegalArgumentException(s"${propKey} should have [prefix](@[tag])?.[param] format")
-    }
-  }
-
   def overrideWithProperties(config:Config, props: Properties): Config = {
     val overrides = {
       import scala.collection.JavaConversions._
-      val b = Seq.newBuilder[ConfigParam]
+      val b = Seq.newBuilder[ConfigProperty]
       for ((k, v) <- props) yield {
         val key = toConfigKey(k)
-        val p = ConfigParam(key, v)
+        val p = ConfigProperty(key, v)
         b += p
       }
       b.result
     }
 
-    var unusedProperties : Set[ConfigParamKey] = overrides.map(_.key).toSet
+    var unusedProperties : Set[ConfigKey] = overrides.map(_.key).toSet
 
     val newConfigs = for (c <- config.holder) yield {
       val configBuilder = ObjectBuilder.fromObject(c.value)
@@ -102,6 +101,10 @@ object ConfigOverwriter extends LogSupport {
         configBuilder.set(p.key.param, p.v)
       }
       ConfigHolder(c.tpe, configBuilder.build)
+    }
+
+    if(unusedProperties.size > 0) {
+      warn(s"There are unused configuration properties: ${unusedProperties.mkString(",")}")
     }
 
     Config(config.env, config.configPaths, newConfigs)
