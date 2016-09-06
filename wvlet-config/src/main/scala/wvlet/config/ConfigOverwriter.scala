@@ -26,8 +26,15 @@ import scala.util.{Failure, Success, Try}
   */
 object ConfigOverwriter extends LogSupport {
 
-  private[config] case class Prefix(prefix:String, tag: Option[String])
-  private[config] case class ConfigKey(prefix: Prefix, param: String)
+  private[config] case class Prefix(prefix:String, tag: Option[String]) {
+    override def toString = tag match {
+      case Some(t) => s"${prefix}@${t}"
+      case None => prefix
+    }
+  }
+  private[config] case class ConfigKey(prefix: Prefix, param: String) {
+    override def toString = s"${prefix}.${param}"
+  }
   private[config] case class ConfigProperty(key: ConfigKey, v: Any)
 
   private[config] def extractPrefix(t: ObjectType): Prefix = {
@@ -77,7 +84,7 @@ object ConfigOverwriter extends LogSupport {
     b.result()
   }
 
-  def overrideWithProperties(config:Config, props: Properties): Config = {
+  def overrideWithProperties(config:Config, props: Properties, onUnusedProperties: Properties => Unit): Config = {
     val overrides = {
       import scala.collection.JavaConversions._
       val b = Seq.newBuilder[ConfigProperty]
@@ -89,22 +96,27 @@ object ConfigOverwriter extends LogSupport {
       b.result
     }
 
-    var unusedProperties : Set[ConfigKey] = overrides.map(_.key).toSet
+    val unusedProperties = Seq.newBuilder[ConfigProperty]
 
     val newConfigs = for (ConfigHolder(tpe, value) <- config) yield {
       val configBuilder = ObjectBuilder.fromObject(value)
       val prefix = extractPrefix(tpe)
-      val overrideParams = overrides.filter(_.key.prefix == prefix)
+      val schema = ObjectSchema.of(tpe)
+
+      val (overrideParams, unused) = overrides.filter(_.key.prefix == prefix).partition(p => schema.containsParameter(p.key.param))
+      unusedProperties ++= unused
       for (p <- overrideParams) {
         trace(s"override: ${p}")
-        unusedProperties -= p.key
         configBuilder.set(p.key.param, p.v)
       }
       tpe -> ConfigHolder(tpe, configBuilder.build)
     }
 
-    if(unusedProperties.size > 0) {
-      warn(s"There are unused configuration properties: ${unusedProperties.mkString(",")}")
+    val unused = unusedProperties.result
+    if(unused.size > 0) {
+      val unusedProps = new Properties
+      unused.map(p => unusedProps.put(p.key.toString, p.v.asInstanceOf[AnyRef]))
+      onUnusedProperties(unusedProps)
     }
 
     Config(config.env, newConfigs.toMap)

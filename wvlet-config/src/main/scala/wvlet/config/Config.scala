@@ -62,11 +62,21 @@ object Config extends LogSupport {
       result
     }
   }
+
+  def REPORT_UNUSED_PROPERTIES : Properties => Unit = { unused:Properties =>
+    warn(s"There are unused properties: ${unused}")
+  }
+  def REPORT_ERROR_FOR_UNUSED_PROPERTIES: Properties => Unit = { unused: Properties =>
+    throw new IllegalArgumentException(s"There are unused properties: ${unused}")
+  }
 }
 
 case class ConfigEnv(env: String, defaultEnv: String, configPaths: Seq[String]) {
   def withConfigPaths(paths: Seq[String]): ConfigEnv = ConfigEnv(env, defaultEnv, paths)
 }
+
+
+import Config._
 
 case class Config private[config](env: ConfigEnv, holder: Map[ObjectType, ConfigHolder]) extends Iterable[ConfigHolder] with LogSupport {
 
@@ -93,7 +103,7 @@ case class Config private[config](env: ConfigEnv, holder: Map[ObjectType, Config
       case Some(x) =>
         x.asInstanceOf[ConfigType]
       case None =>
-        throw new IllegalArgumentException(s"No [${t}] value is found")
+        throw new IllegalArgumentException(s"No config value for ${t} is found")
     }
   }
 
@@ -148,11 +158,11 @@ case class Config private[config](env: ConfigEnv, holder: Map[ObjectType, Config
     this + ConfigHolder(tpe, config)
   }
 
-  def overrideWithProperties(props: Properties): Config = {
-    ConfigOverwriter.overrideWithProperties(this, props)
+  def overrideWithProperties(props: Properties, onUnusedProperties: Properties => Unit = REPORT_UNUSED_PROPERTIES): Config = {
+    ConfigOverwriter.overrideWithProperties(this, props, onUnusedProperties)
   }
 
-  def overrideWithPropertiesFile(propertiesFile: String): Config = {
+  def overrideWithPropertiesFile(propertiesFile: String, onUnusedProperties: Properties => Unit = REPORT_UNUSED_PROPERTIES): Config = {
     findConfigFile(propertiesFile) match {
       case None =>
         throw new FileNotFoundException(propertiesFile)
@@ -162,7 +172,7 @@ case class Config private[config](env: ConfigEnv, holder: Map[ObjectType, Config
           p.load(in)
           p
         }
-        overrideWithProperties(props)
+        overrideWithProperties(props, onUnusedProperties)
     }
   }
 

@@ -122,6 +122,25 @@ class ConfigTest extends WvletSpec {
       }
     }
 
+    "find unused properties" in {
+      val p = new Properties
+      p.setProperty("sample.id", "10")
+      p.setProperty("sample@appscope.id", "2")
+      p.setProperty("sample@appscope.message", "hellohello")
+
+      var unused : Option[Properties] = None
+      val c = Config(env = "default", configPaths = configPaths)
+              .register[SampleConfig](SampleConfig(1, "hello"))
+              .register[SampleConfig @@ AppScope](SampleConfig(1, "hellohello").asInstanceOf[SampleConfig @@ AppScope])
+              .overrideWithProperties(p, onUnusedProperties = { p: Properties =>
+                unused = Some(p)
+              })
+
+      unused shouldBe 'defined
+      unused.get.size shouldBe 1
+      unused.get.keySet should contain ("sample@appscope.message")
+    }
+
     "report missing YAML file error" in {
       intercept[FileNotFoundException] {
         val c = Config(env = "default", configPaths = configPaths)
