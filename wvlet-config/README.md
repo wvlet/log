@@ -91,7 +91,7 @@ val serverConfig = config.of[ServerConfig]
 
 ### Show configuration changes
 
-To see the effective configurations, use `Config.getConfigChangges` method:
+To see the effective configurations, use `Config.getConfigChanges` method:
 ```scala
 import wvlet.config.Config
 
