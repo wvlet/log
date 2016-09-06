@@ -44,7 +44,7 @@ object Config extends LogSupport {
     sys.props.getOrElse("prog.home", "") // program home for wvlet-launcher
   )
 
-  def apply(env:String, defaultEnv:String = "default", configPaths:Seq[String]=defaultConfigPath): Config = Config(ConfigEnv(env, "default", configPaths), Vector.empty)
+  def apply(env:String, defaultEnv:String = "default", configPaths:Seq[String]=defaultConfigPath): Config = Config(ConfigEnv(env, "default", configPaths), Map.empty[ObjectType, ConfigHolder])
 
   private def cleanupConfigPaths(paths: Seq[String]) = {
     val b = Seq.newBuilder[String]
@@ -67,7 +67,7 @@ case class ConfigEnv(env: String, defaultEnv: String, configPaths: Seq[String]) 
   def withConfigPaths(paths: Seq[String]): ConfigEnv = ConfigEnv(env, defaultEnv, paths)
 }
 
-case class Config private[config](env: ConfigEnv, holder: Vector[ConfigHolder]) extends Iterable[ConfigHolder] with LogSupport {
+case class Config private[config](env: ConfigEnv, holder: Map[ObjectType, ConfigHolder]) extends Iterable[ConfigHolder] with LogSupport {
 
   // Customization
   def withEnv(newEnv: String, defaultEnv: String = "default"): Config = {
@@ -79,12 +79,13 @@ case class Config private[config](env: ConfigEnv, holder: Vector[ConfigHolder]) 
   }
 
   // Accessors to configurations
-  def getAll: Seq[ConfigHolder] = holder
-  override def iterator: Iterator[ConfigHolder] = holder.iterator
+  def getAll: Seq[ConfigHolder] = holder.values.toSeq
+  override def iterator: Iterator[ConfigHolder] = holder.values.iterator
 
   private def find[A](tpe: ObjectType): Option[Any] = {
-    holder.filter(_.tpe == tpe).lastOption.map(_.value)
+    holder.get(tpe).map(_.value)
   }
+
   def of[ConfigType](implicit tag: ru.TypeTag[ConfigType]): ConfigType = {
     val t = ObjectType.ofTypeTag(tag)
     find(t) match {
@@ -95,7 +96,7 @@ case class Config private[config](env: ConfigEnv, holder: Vector[ConfigHolder]) 
     }
   }
 
-  def +(holder: ConfigHolder): Config = Config(env, this.holder :+ holder)
+  def +(h: ConfigHolder): Config = Config(env, this.holder + (h.tpe -> h))
   def ++(other: Config): Config = {
     Config(env, this.holder ++ other.holder)
   }

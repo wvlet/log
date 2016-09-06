@@ -91,23 +91,23 @@ object ConfigOverwriter extends LogSupport {
 
     var unusedProperties : Set[ConfigKey] = overrides.map(_.key).toSet
 
-    val newConfigs = for (c <- config.holder) yield {
-      val configBuilder = ObjectBuilder.fromObject(c.value)
-      val prefix = extractPrefix(c.tpe)
+    val newConfigs = for (ConfigHolder(tpe, value) <- config) yield {
+      val configBuilder = ObjectBuilder.fromObject(value)
+      val prefix = extractPrefix(tpe)
       val overrideParams = overrides.filter(_.key.prefix == prefix)
       for (p <- overrideParams) {
         trace(s"override: ${p}")
         unusedProperties -= p.key
         configBuilder.set(p.key.param, p.v)
       }
-      ConfigHolder(c.tpe, configBuilder.build)
+      tpe -> ConfigHolder(tpe, configBuilder.build)
     }
 
     if(unusedProperties.size > 0) {
       warn(s"There are unused configuration properties: ${unusedProperties.mkString(",")}")
     }
 
-    Config(config.env, newConfigs)
+    Config(config.env, newConfigs.toMap)
   }
 
 }
