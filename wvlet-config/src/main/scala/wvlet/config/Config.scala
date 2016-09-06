@@ -117,6 +117,18 @@ case class Config private[config](env: ConfigEnv, holder: Map[ObjectType, Config
     this + ConfigHolder(tpe, config)
   }
 
+  /**
+    * Register the default value of the object as configuration
+    * @tparam ConfigType
+    * @return
+    */
+  def registerDefault[ConfigType: ru.TypeTag] : Config = {
+    val tpe = ObjectType.ofTypeTag(implicitly[ru.TypeTag[ConfigType]])
+    // Create the default object of this ConfigType
+    val c = ObjectBuilder(tpe.rawType).build
+    this + ConfigHolder(tpe, c)
+  }
+
   def registerFromYaml[ConfigType: ru.TypeTag : ClassTag](yamlFile: String): Config = {
     val tpe = ObjectType.ofTypeTag(implicitly[ru.TypeTag[ConfigType]])
     val config: Option[ConfigType] = loadFromYaml[ConfigType](yamlFile, onMissing = {

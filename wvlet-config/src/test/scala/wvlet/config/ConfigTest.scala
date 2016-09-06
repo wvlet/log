@@ -24,6 +24,7 @@ trait AppScope
 trait SessionScope
 
 case class SampleConfig(id: Int, fullName: String)
+case class DefaultConfig(id: Int = 1, a:String = "hello")
 
 /**
   *
@@ -84,6 +85,22 @@ class ConfigTest extends WvletSpec {
 
       val s = config.of[SampleConfig @@ SessionScope]
       s shouldBe SampleConfig(2, "session")
+    }
+
+    "register the default objects" in {
+      val config = Config(env = "default")
+        .registerDefault[DefaultConfig]
+        .registerDefault[SampleConfig]
+
+      config.of[DefaultConfig] shouldBe DefaultConfig()
+      // Sanity test
+      config.of[SampleConfig] shouldBe SampleConfig(0, "")
+
+      // Override the default object with properties
+      val p = new Properties
+      p.setProperty("default.a", "world")
+      val c2 = config.overrideWithProperties(p).of[DefaultConfig]
+      c2 shouldBe DefaultConfig(1, "world")
     }
 
     "override values with properties" taggedAs ("props") in {
