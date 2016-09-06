@@ -92,7 +92,7 @@ class ConfigTest extends WvletSpec {
       p.setProperty("sample@appscope.id", "2")
       p.setProperty("sample@appscope.full_name", "hellohello")
 
-      val c1 = Config(env = "devault", configPaths = configPaths)
+      val c1 = Config(env = "default", configPaths = configPaths)
                .register[SampleConfig](SampleConfig(1, "hello"))
                .register[SampleConfig @@ AppScope](SampleConfig(1, "hellohello").asInstanceOf[SampleConfig @@ AppScope])
                .overrideWithProperties(p)

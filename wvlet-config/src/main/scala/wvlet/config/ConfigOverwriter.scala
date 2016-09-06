@@ -43,7 +43,7 @@ object ConfigOverwriter extends LogSupport {
     }
   }
 
-  private[config] def toConfigKey(propKey: String): ConfigKey = {
+  private[config] def configKeyOf(propKey: String): ConfigKey = {
     val c = propKey.split("\\.")
     c.length match {
       case l if l >= 2 =>
@@ -82,7 +82,7 @@ object ConfigOverwriter extends LogSupport {
       import scala.collection.JavaConversions._
       val b = Seq.newBuilder[ConfigProperty]
       for ((k, v) <- props) yield {
-        val key = toConfigKey(k)
+        val key = configKeyOf(k)
         val p = ConfigProperty(key, v)
         b += p
       }
