@@ -89,3 +89,16 @@ val serverConfig = config.of[ServerConfig]
 
 ```
 
+### Show configuration changes
+
+To see the effective configurations, use `Config.getConfigChangges` method:
+```scala
+import wvlet.config.Config
+
+val config =
+  Config(env="development", configPaths="./config")
+
+for(change <- config.getConfigChanges) {
+  println(s"[${change.key}] default:${change.default}, current:${change.current}")
+}
+```
