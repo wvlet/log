@@ -103,6 +103,31 @@ class ConfigTest extends WvletSpec {
       c2 shouldBe DefaultConfig(1, "world")
     }
 
+    "show the default configuration" in {
+      val config = Config(env = "default", configPaths = configPaths)
+                   .registerFromYaml[SampleConfig]("myconfig.yml")
+
+      val default = config.defaultValueOf[SampleConfig]
+      val current = config.of[SampleConfig]
+
+      info(s"default: ${default}, current: ${current}")
+
+      val changes = config.getConfigChanges
+      changes.size shouldBe 2
+      info(s"changes:\n${changes.mkString("\n")}")
+      val keys : Seq[String] = changes.map(_.key.toString)
+      keys should contain ("sample.id")
+      keys should contain ("sample.fullname")
+
+      val id = changes.find(_.key.toString == "sample.id").get
+      id.default shouldBe 0
+      id.current shouldBe 1
+
+      val fullname = changes.find(_.key.toString == "sample.fullname").get
+      fullname.default shouldBe ""
+      fullname.current shouldBe "default-config"
+    }
+
     "override values with properties" taggedAs ("props") in {
       val p = new Properties
       p.setProperty("sample.id", "10")

@@ -16,6 +16,7 @@ package wvlet.config
 import java.io.{File, FileInputStream, FileNotFoundException}
 import java.util.Properties
 
+import wvlet.config.PropertiesConfig.ConfigKey
 import wvlet.config.YamlReader.loadMapOf
 import wvlet.log.LogSupport
 import wvlet.log.io.IOUtil
@@ -75,6 +76,9 @@ case class ConfigEnv(env: String, defaultEnv: String, configPaths: Seq[String]) 
   def withConfigPaths(paths: Seq[String]): ConfigEnv = ConfigEnv(env, defaultEnv, paths)
 }
 
+case class ConfigChange(tpe:ObjectType, key:ConfigKey, default:Any, current:Any) {
+  override def toString = s"[${tpe}] ${key} = ${current} (default = ${default})"
+}
 
 import Config._
 
@@ -93,18 +97,41 @@ case class Config private[config](env: ConfigEnv, holder: Map[ObjectType, Config
   def getAll: Seq[ConfigHolder] = holder.values.toSeq
   override def iterator: Iterator[ConfigHolder] = holder.values.iterator
 
+  def getConfigChanges : Seq[ConfigChange] = {
+    val b = Seq.newBuilder[ConfigChange]
+    for(c <- getAll) {
+      val defaultProps = PropertiesConfig.toConfigProperties(c.tpe, getDefaultValueOf(c.tpe))
+      val currentProps = PropertiesConfig.toConfigProperties(c.tpe, c.value)
+
+      for((k, props) <- defaultProps.groupBy(_.key); defaultValue <- props; current <- currentProps.filter(x => x.key == k)) {
+        b += ConfigChange(c.tpe, k, defaultValue.v, current.v)
+      }
+    }
+    b.result
+  }
+
   private def find[A](tpe: ObjectType): Option[Any] = {
     holder.get(tpe).map(_.value)
   }
 
-  def of[ConfigType](implicit tag: ru.TypeTag[ConfigType]): ConfigType = {
-    val t = ObjectType.ofTypeTag(tag)
+  def of[ConfigType: ru.TypeTag]: ConfigType = {
+    val t = ObjectType.ofTypeTag(implicitly[ru.TypeTag[ConfigType]])
     find(t) match {
       case Some(x) =>
         x.asInstanceOf[ConfigType]
       case None =>
         throw new IllegalArgumentException(s"No config value for ${t} is found")
     }
+  }
+
+  def defaultValueOf[ConfigType: ru.TypeTag] : ConfigType = {
+    val tpe = ObjectType.ofTypeTag(implicitly[ru.TypeTag[ConfigType]])
+    getDefaultValueOf(tpe).asInstanceOf[ConfigType]
+  }
+
+  private def getDefaultValueOf(tpe:ObjectType) : Any = {
+    // Create the default object of this ConfigType
+    ObjectBuilder(tpe.rawType).build
   }
 
   def +(h: ConfigHolder): Config = Config(env, this.holder + (h.tpe -> h))
@@ -124,9 +151,7 @@ case class Config private[config](env: ConfigEnv, holder: Map[ObjectType, Config
     */
   def registerDefault[ConfigType: ru.TypeTag] : Config = {
     val tpe = ObjectType.ofTypeTag(implicitly[ru.TypeTag[ConfigType]])
-    // Create the default object of this ConfigType
-    val c = ObjectBuilder(tpe.rawType).build
-    this + ConfigHolder(tpe, c)
+    this + ConfigHolder(tpe, defaultValueOf[ConfigType])
   }
 
   def registerFromYaml[ConfigType: ru.TypeTag : ClassTag](yamlFile: String): Config = {
@@ -171,7 +196,7 @@ case class Config private[config](env: ConfigEnv, holder: Map[ObjectType, Config
   }
 
   def overrideWithProperties(props: Properties, onUnusedProperties: Properties => Unit = REPORT_UNUSED_PROPERTIES): Config = {
-    ConfigOverwriter.overrideWithProperties(this, props, onUnusedProperties)
+    PropertiesConfig.overrideWithProperties(this, props, onUnusedProperties)
   }
 
   def overrideWithPropertiesFile(propertiesFile: String, onUnusedProperties: Properties => Unit = REPORT_UNUSED_PROPERTIES): Config = {

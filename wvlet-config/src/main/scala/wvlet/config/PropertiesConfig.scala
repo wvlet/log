@@ -20,22 +20,23 @@ import wvlet.obj.ObjectBuilder.CanonicalNameFormatter
 import wvlet.obj.{ObjectBuilder, ObjectSchema, ObjectType, TaggedObjectType}
 
 import scala.util.{Failure, Success, Try}
+import scala.reflect.runtime.{universe => ru}
 
 /**
-  * Allow overwriting config objects with Java Properties
+  * Helper class to overwrite config objects using Java Properties
   */
-object ConfigOverwriter extends LogSupport {
+object PropertiesConfig extends LogSupport {
 
-  private[config] case class Prefix(prefix:String, tag: Option[String]) {
+  case class Prefix(prefix:String, tag: Option[String]) {
     override def toString = tag match {
       case Some(t) => s"${prefix}@${t}"
       case None => prefix
     }
   }
-  private[config] case class ConfigKey(prefix: Prefix, param: String) {
+  case class ConfigKey(prefix: Prefix, param: String) {
     override def toString = s"${prefix}.${param}"
   }
-  private[config] case class ConfigProperty(key: ConfigKey, v: Any)
+  case class ConfigProperty(key: ConfigKey, v: Any)
 
   private[config] def extractPrefix(t: ObjectType): Prefix = {
     def canonicalize(s: String): String = {
@@ -69,16 +70,16 @@ object ConfigOverwriter extends LogSupport {
     }
   }
 
-  private[config] def configToProps(configHolder: ConfigHolder): Seq[ConfigProperty] = {
-    val prefix = extractPrefix(configHolder.tpe)
-    val schema = ObjectSchema.of(configHolder.tpe)
+  private[config] def toConfigProperties(tpe:ObjectType, config: Any): Seq[ConfigProperty] = {
+    val prefix = extractPrefix(tpe)
+    val schema = ObjectSchema.of(tpe)
     val b = Seq.newBuilder[ConfigProperty]
     for (p <- schema.parameters) yield {
       val key = ConfigKey(prefix, CanonicalNameFormatter.format(p.name))
-      Try(p.get(configHolder.value)) match {
+      Try(p.get(config)) match {
         case Success(v) => b += ConfigProperty(key, v)
         case Failure(e) =>
-          warn(s"Failed to read parameter ${p} from ${configHolder}")
+          warn(s"Failed to read parameter ${p} from ${config}")
       }
     }
     b.result()
