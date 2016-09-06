@@ -44,7 +44,8 @@ object Config extends LogSupport {
     sys.props.getOrElse("prog.home", "") // program home for wvlet-launcher
   )
 
-  def apply(env:String, defaultEnv:String = "default", configPaths:Seq[String]=defaultConfigPath): Config = Config(ConfigEnv(env, "default", configPaths), Map.empty[ObjectType, ConfigHolder])
+  def apply(env: String, defaultEnv: String = "default", configPaths: Seq[String] = defaultConfigPath): Config = Config(ConfigEnv(env, defaultEnv, configPaths),
+    Map.empty[ObjectType, ConfigHolder])
 
   private def cleanupConfigPaths(paths: Seq[String]) = {
     val b = Seq.newBuilder[String]
@@ -108,33 +109,43 @@ case class Config private[config](env: ConfigEnv, holder: Map[ObjectType, Config
 
   def registerFromYaml[ConfigType: ru.TypeTag : ClassTag](yamlFile: String): Config = {
     val tpe = ObjectType.ofTypeTag(implicitly[ru.TypeTag[ConfigType]])
-    registerFromYaml(yamlFile, TypeUtil.newInstanceOf[ConfigType])
+    val config: Option[ConfigType] = loadFromYaml[ConfigType](yamlFile, onMissing = {
+      throw new FileNotFoundException(s"${yamlFile} is not found in ${env.configPaths.mkString(":")}")
+    })
+    config match {
+      case Some(x) =>
+        this + ConfigHolder(tpe, x)
+      case None =>
+        throw new IllegalStateException(s"No configuration for ${tpe} (${env.env} or ${env.defaultEnv}) is found")
+    }
   }
 
-  def registerFromYaml[ConfigType: ru.TypeTag : ClassTag](yamlFile: String, default: => ConfigType): Config = {
+  private def loadFromYaml[ConfigType: ru.TypeTag](yamlFile: String, onMissing: => Option[ConfigType]): Option[ConfigType] = {
     val tpe = ObjectType.ofTypeTag(implicitly[ru.TypeTag[ConfigType]])
-    val cls = tpe.rawType
-
-    val yamlFilePath = findConfigFile(yamlFile)
-    val configInYaml: Option[ConfigType] = yamlFilePath.flatMap { realPath =>
-      val m = loadMapOf[ConfigType](realPath)(ClassTag(cls))
-      m.get(env.env) match {
-        case Some(x) =>
-          info(s"Loading ${tpe} from ${realPath}, env:${env}")
-          Some(x)
-        case None =>
-          // Load default
-          debug(s"Configuration for ${env.env} is not found in ${realPath}. Load ${env.defaultEnv} configuration instead")
-          info(s"Loading ${tpe} from ${realPath}, env:${env} <= used env:${env.defaultEnv}")
-          m.get(env.defaultEnv)
-      }
+    findConfigFile(yamlFile) match {
+      case None =>
+        onMissing
+      case Some(realPath) =>
+        val m = loadMapOf[ConfigType](realPath)(ClassTag(tpe.rawType))
+        m.get(env.env) match {
+          case Some(x) =>
+            info(s"Loading ${tpe} from ${realPath}, env:${env.env}")
+            Some(x)
+          case None =>
+            // Load default
+            debug(s"Configuration for ${env.env} is not found in ${realPath}. Load ${env.defaultEnv} configuration instead")
+            m.get(env.defaultEnv).map{ x =>
+              info(s"Loading ${tpe} from ${realPath}, default env:${env.defaultEnv}")
+              x
+            }.orElse(onMissing)
+        }
     }
-    val newConfig = configInYaml.getOrElse {
-      warn(s"Configuration file ${yamlFilePath}")
+  }
 
-      default
-    }
-    this + ConfigHolder(tpe, newConfig)
+  def registerFromYamlOrElse[ConfigType: ru.TypeTag : ClassTag](yamlFile: String, defaultValue: => ConfigType): Config = {
+    val tpe = ObjectType.ofTypeTag(implicitly[ru.TypeTag[ConfigType]])
+    val config = loadFromYaml[ConfigType](yamlFile, onMissing = Some(defaultValue))
+    this + ConfigHolder(tpe, config)
   }
 
   def overrideWithProperties(props: Properties): Config = {

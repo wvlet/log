@@ -13,7 +13,7 @@
  */
 package wvlet.config
 
-import java.io.FileOutputStream
+import java.io.{FileNotFoundException, FileOutputStream}
 import java.util.Properties
 
 import wvlet.log.io.IOUtil
@@ -97,7 +97,7 @@ class ConfigTest extends WvletSpec {
                .register[SampleConfig @@ AppScope](SampleConfig(1, "hellohello").asInstanceOf[SampleConfig @@ AppScope])
                .overrideWithProperties(p)
 
-      class ConfigSpec(config:Config) {
+      class ConfigSpec(config: Config) {
         val c = config.of[SampleConfig]
         c shouldBe SampleConfig(10, "hello")
 
@@ -119,6 +119,20 @@ class ConfigTest extends WvletSpec {
                  .overrideWithPropertiesFile(file.getName)
 
         new ConfigSpec(c2)
+      }
+    }
+
+    "report missing YAML file error" in {
+      intercept[FileNotFoundException] {
+        val c = Config(env = "default", configPaths = configPaths)
+                .registerFromYaml[SampleConfig]("myconfig-missing.yml")
+      }
+    }
+
+    "report missing value error" in {
+      intercept[Exception] {
+        val c = Config(env = "unknown-env", defaultEnv = "unknown-default", configPaths = configPaths)
+                .registerFromYaml[SampleConfig]("myconfig.yml")
       }
     }
   }
