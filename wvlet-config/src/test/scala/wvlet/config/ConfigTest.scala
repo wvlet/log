@@ -16,6 +16,7 @@ package wvlet.config
 import java.io.{FileNotFoundException, FileOutputStream}
 import java.util.Properties
 
+import wvlet.config.PropertiesConfig.{ConfigKey, Prefix}
 import wvlet.log.io.IOUtil
 import wvlet.obj.tag._
 import wvlet.test.WvletSpec
@@ -46,6 +47,11 @@ class ConfigTest extends WvletSpec {
   }
 
   "Config" should {
+    "cleanup config paths" in {
+      Config.cleanupConfigPaths(Seq("")) should not contain ("")
+      Config.cleanupConfigPaths(Seq("")) should contain (".")
+    }
+
     "use current directory for search path" in {
       val c = Config(env = "debug")
       c.env.configPaths should contain (".")
@@ -136,6 +142,13 @@ class ConfigTest extends WvletSpec {
       s shouldBe SampleConfig(2, "session")
     }
 
+    "throw exception on missing environment" in {
+      intercept[IllegalArgumentException] {
+        val config = Config(env = "weird-env", defaultEnv = "unknown", configPaths = configPaths)
+                     .registerFromYaml[SampleConfig]("myconfig.yml")
+      }
+    }
+
     "register the default objects" in {
       val config = Config(env = "default")
         .registerDefault[DefaultConfig]
@@ -213,6 +226,16 @@ class ConfigTest extends WvletSpec {
       }
     }
 
+    "parse configuration property keys" in {
+      PropertiesConfig.configKeyOf("tpe.param") shouldBe ConfigKey(Prefix("tpe", None), "param")
+      PropertiesConfig.configKeyOf("tpe@tag.param") shouldBe ConfigKey(Prefix("tpe", Some("tag")), "param")
+      PropertiesConfig.configKeyOf("tpe@@tag.param") shouldBe ConfigKey(Prefix("tpe", Some("tag")), "param")
+
+      intercept[IllegalArgumentException] {
+        PropertiesConfig.configKeyOf("tpe@@param")
+      }
+    }
+
     "find unused properties" in {
       val p = new Properties
       p.setProperty("sample.id", "10")
@@ -236,6 +259,15 @@ class ConfigTest extends WvletSpec {
       intercept[FileNotFoundException] {
         val c = Config(env = "default", configPaths = configPaths)
                 .overrideWithPropertiesFile("unknown-propertiles-file-path.propertiles")
+      }
+    }
+
+    "report error if unused Properties are found" in {
+      intercept[IllegalArgumentException] {
+        val p = new Properties()
+        p.setProperty("sample.idid", "10")
+        val c = Config(env = "default", configPaths = configPaths)
+                .overrideWithProperties(p, onUnusedProperties = Config.REPORT_ERROR_FOR_UNUSED_PROPERTIES)
       }
     }
 

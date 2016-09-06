@@ -86,7 +86,7 @@ object PropertiesConfig extends LogSupport {
   }
 
   def overrideWithProperties(config:Config, props: Properties, onUnusedProperties: Properties => Unit): Config = {
-    val overrides = {
+    val overrides : Seq[ConfigProperty] = {
       import scala.collection.JavaConversions._
       val b = Seq.newBuilder[ConfigProperty]
       for ((k, v) <- props) yield {
@@ -98,6 +98,10 @@ object PropertiesConfig extends LogSupport {
     }
 
     val unusedProperties = Seq.newBuilder[ConfigProperty]
+
+    // Check properties for unknown config objects
+    val knownPrefixes = config.map(x => extractPrefix(x.tpe)).toSet
+    unusedProperties ++= overrides.filterNot(x => knownPrefixes.contains(x.key.prefix))
 
     val newConfigs = for (ConfigHolder(tpe, value) <- config) yield {
       val configBuilder = ObjectBuilder.fromObject(value)
