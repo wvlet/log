@@ -165,7 +165,7 @@ case class Config private[config](env: ConfigEnv, holder: Map[ObjectType, Config
   def overrideWithPropertiesFile(propertiesFile: String, onUnusedProperties: Properties => Unit = REPORT_UNUSED_PROPERTIES): Config = {
     findConfigFile(propertiesFile) match {
       case None =>
-        throw new FileNotFoundException(propertiesFile)
+        throw new FileNotFoundException(s"Propertiles file ${propertiesFile} is not found")
       case Some(propPath) =>
         val props = IOUtil.withResource(new FileInputStream(propPath)) { in =>
           val p = new Properties()
