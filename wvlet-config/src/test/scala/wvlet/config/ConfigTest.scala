@@ -37,7 +37,56 @@ class ConfigTest extends WvletSpec {
     Config(env = env, configPaths = configPaths)
     .registerFromYaml[SampleConfig]("myconfig.yml")
 
+  "ConfigEnv" should {
+    "set config paths" in {
+      val env = ConfigEnv("debug", "default", Seq.empty)
+      val newEnv = env.withConfigPaths(Seq("."))
+      newEnv.configPaths should contain (".")
+    }
+  }
+
   "Config" should {
+    "use current directory for search path" in {
+      val c = Config(env = "debug")
+      c.env.configPaths should contain (".")
+    }
+
+    "customize env" in {
+      val config = Config(env = "staging", defaultEnv = "default")
+      val devConfig = config.withEnv("development", "test")
+      devConfig.env.env shouldBe "development"
+      devConfig.env.defaultEnv shouldBe "test"
+    }
+
+    "customize config paths" in {
+      val config = Config(env = "staging", defaultEnv = "default", configPaths = Seq.empty)
+      val newConfig = config.withConfigPaths(Seq("."))
+      newConfig.env.configPaths should contain (".")
+    }
+
+    "throw error on unknown config type" in {
+      val config = Config(env = "staging", defaultEnv = "default", configPaths = Seq.empty)
+      intercept[IllegalArgumentException] {
+        config.of[String]
+      }
+    }
+
+    "support getOrElse" in {
+      val config = Config(env = "staging", defaultEnv = "default", configPaths = Seq.empty)
+        .register[Int](10)
+      val s = config.getOrElse[String]("hello world")
+      s shouldBe "hello world"
+
+      config.getOrElse[Int](20) shouldBe 10
+    }
+
+    "support registerFromYamlOrElse" in {
+      val config = Config(env = "staging", defaultEnv = "default", configPaths = Seq.empty)
+        .registerFromYamlOrElse[String]("unknown-yaml-file.yml", "hello world")
+      val s = config.of[String]
+      s shouldBe "hello world"
+    }
+
     "map yaml file into a case class" in {
       val config = loadConfig("default")
 

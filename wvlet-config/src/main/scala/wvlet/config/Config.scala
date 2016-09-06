@@ -29,21 +29,14 @@ case class ConfigHolder(tpe: ObjectType, value: Any)
 
 case class ConfigPaths(configPaths: Seq[String]) extends LogSupport {
   info(s"Config file paths: [${configPaths.mkString(", ")}]")
-
-  def findConfigFile(name: String): String = {
-    configPaths
-    .map(p => new File(p, name))
-    .find(_.exists())
-    .map(_.getPath)
-    .getOrElse(throw new FileNotFoundException(s"${name} is not found"))
-  }
 }
 
 object Config extends LogSupport {
-  private def defaultConfigPath = Seq(
-    ".", // current directory
-    sys.props.getOrElse("prog.home", "") // program home for wvlet-launcher
-  )
+  private def defaultConfigPath = cleanupConfigPaths(
+    Seq(
+      ".", // current directory
+      sys.props.getOrElse("prog.home", "") // program home for wvlet-launcher
+    ))
 
   def apply(env: String, defaultEnv: String = "default", configPaths: Seq[String] = defaultConfigPath): Config = Config(ConfigEnv(env, defaultEnv, configPaths),
     Map.empty[ObjectType, ConfigHolder])
@@ -124,6 +117,16 @@ case class Config private[config](env: ConfigEnv, holder: Map[ObjectType, Config
     }
   }
 
+  def getOrElse[ConfigType:ru.TypeTag](default: => ConfigType) : ConfigType = {
+    val t = ObjectType.ofTypeTag(implicitly[ru.TypeTag[ConfigType]])
+    find(t) match {
+      case Some(x) =>
+        x.asInstanceOf[ConfigType]
+      case None =>
+        default
+    }
+  }
+
   def defaultValueOf[ConfigType: ru.TypeTag] : ConfigType = {
     val tpe = ObjectType.ofTypeTag(implicitly[ru.TypeTag[ConfigType]])
     getDefaultValueOf(tpe).asInstanceOf[ConfigType]
@@ -192,7 +195,7 @@ case class Config private[config](env: ConfigEnv, holder: Map[ObjectType, Config
   def registerFromYamlOrElse[ConfigType: ru.TypeTag : ClassTag](yamlFile: String, defaultValue: => ConfigType): Config = {
     val tpe = ObjectType.ofTypeTag(implicitly[ru.TypeTag[ConfigType]])
     val config = loadFromYaml[ConfigType](yamlFile, onMissing = Some(defaultValue))
-    this + ConfigHolder(tpe, config)
+    this + ConfigHolder(tpe, config.get)
   }
 
   def overrideWithProperties(props: Properties, onUnusedProperties: Properties => Unit = REPORT_UNUSED_PROPERTIES): Config = {
