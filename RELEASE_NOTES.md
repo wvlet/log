@@ -5,10 +5,10 @@ Release Notes
     - Terminate log scanner thread automatically
     - Suppress sbt and scalatest related stack trace messages
  * wvlet-config 
-    - Made a lot of refactoring [#14](Instead Config is now immuable)
+    - Improved the configuration flow [#14](https://github.com/wvlet/wvlet/pull/14)
        - Config is now immutable. Deprecated ConfigBuilder.
        - Use prefix@tag.param format for properties file
-       - Allow providing default config instance
+       - Allow providing default config instances
        - Throw FileNotFoundException when YAML file is not found
        - Use Map for the internal config holder to avoid duplicates
        - Add method for returning default and overwritten configurations
