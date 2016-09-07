@@ -4,8 +4,8 @@ wvlet-config
 wvlet-config enables configure your Scala applications in a simple flow:
 
 1. Write config classes of your application.
-1. Read YAML files.
-1. (optional) Override configuration with Properties.
+1. Read YAML files to populate the config objects.
+1. (optional) Override the configuration with Properties.
 1. Use it!
 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.wvlet/wvlet-config_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.wvlet/wvlet-config_2.11/)
@@ -18,16 +18,13 @@ libraryDependencies += "org.wvlet" %% "wvlet-cofig" % "(version)"
 
 Here is the details of the application configuration flow:
 
-1. The application specifies an environment (e.g., `test`, `staging`, `production`, etc) and configuration file paths:
-    ```scala
-    import wvlet.config._
-    val config = Config(env="production", defaultEnv="default", configPaths=Seq(".", "config"))
-    ```
-1. Read a configuration file (YAML) from `configpath(s)`
+1. The application specifies an environment (e.g., `test`, `staging`, `production`, etc) and configuration file paths.
+1. Read a configuration file (YAML) from `configpath(s)`.
    - The first found YAML file in the config paths will be used.
+   - `config.registerFromYaml[A](yaml file)` will create an object `A` from the YAML data.
    - If the YAML file does not contain data for the target environment, it searches for `default` environment instead.
-       - If `default` environment is also not found, the provided default object will be used (optional)
-1. Provide additional configurations (e.g., confidential information such as password, apikey, etc.)
+       - If `default` environment is also not found, the provided default object will be used (optional).
+1. (optional) Provide additional configurations (e.g., confidential information such as password, apikey, etc.)
    - Read these configurations in a secure manner and create a `Properties` object.
    - Override your configurations with `config.overideWithPropertie(Properties)`.
 1. Get the configuration with `config.of[A]`
