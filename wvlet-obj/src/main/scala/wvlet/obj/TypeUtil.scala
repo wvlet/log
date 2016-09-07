@@ -291,6 +291,10 @@ object TypeUtil extends LogSupport {
     obj.asInstanceOf[A]
   }
 
+  def newInstanceOf[A : ClassTag] : A = {
+    newInstance(implicitly[ClassTag[A]].runtimeClass).asInstanceOf[A]
+  }
+
   def newInstance[A](cl: Class[A]): A = {
     def createDefaultInstance: A = {
       trace(s"Creating a default instance of $cl")
