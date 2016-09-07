@@ -1,24 +1,39 @@
 wvlet-config
 ===
 
-## Application configuration flow
+wvlet-config enables configure your Scala applications in a simple flow:
 
-- User specifies an environment (e.g., `test`, `staging`, `production`, etc)
-- Read a configuration file (YAML)
-  - wvlet-config will search `configpath(s)` to find the YAML file  
-  - If the target YAML file is not found, it uses the default configuration
-  - When YAML file is found, it searches for configuration for the target environment.
-       - If no configuration for the target environment is found, uses `default` environment configuration. 
-       - If `default` environment is also not found, it uses the provided default object
+1. Write config classes of your application.
+1. Read YAML files.
+1. (optional) Override configuration with Properties.
+1. Use it!
 
-- Supply additional configurations (e.g., confidential information such as password, apikey, etc.)
-  - Read these configurations in a secure manner and create a `Properties` object.
-  - Override your configurations with this `Properties` object.
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.wvlet/wvlet-config_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.wvlet/wvlet-config_2.11/)
 
-- Use ConfigBuider to build configurations
+```scala
+libraryDependencies += "org.wvlet" %% "wvlet-cofig" % "(version)"
+```
+
+## Detailed application configuration flow
+
+Here is the details of the application configuration flow:
+
+1. The application specifies an environment (e.g., `test`, `staging`, `production`, etc) and configuration file paths:
+    ```scala
+    import wvlet.config._
+    val config = Config(env="production", defaultEnv="default", configPaths=Seq(".", "config"))
+    ```
+1. Read a configuration file (YAML) from `configpath(s)`
+   - The first found YAML file in the config paths will be used.
+   - If the YAML file does not contain data for the target environment, it searches for `default` environment instead.
+       - If `default` environment is also not found, the provided default object will be used (optional)
+1. Provide additional configurations (e.g., confidential information such as password, apikey, etc.)
+   - Read these configurations in a secure manner and create a `Properties` object.
+   - Override your configurations with `config.overideWithPropertie(Properties)`.
+1. Get the configuration with `config.of[A]`
 
 
-## Usage
+## Example
 
 **config/access-log.yml**:
 ```
@@ -39,7 +54,7 @@ default:
   host: localhost
   port: 8080
 
-# Override port number for development
+# Override the port number for development
 development:
   <<: *default
   port: 9000
@@ -52,18 +67,16 @@ log@access.file=/path/to/access.log
 log@db.file=/path/to/db.log
 log@db.log.max_files=250
 server.host=mydomain.com
-
-
 server.password=xxxxxyyyyyy
 ```
 
-code:
+**Sacla code**:
 ```scala
 import wvlet.config.Config
 import wvlet.obj.tag.@@
 
-// Configulation classes can have default values
-// Configuration class name convention: xxxxConfig (xxxx will be the prefix)
+// Configuration classes can have default values
+// Configuration class name convention: xxxxConfig (xxxx will be the prefix for properties file)
 case class LogConfig(file:String, maxFiles:Int=100, maxSize:Int=10485760)
 case class ServerConfig(host:String, port:Int, password:String)
 
@@ -89,15 +102,11 @@ val serverConfig = config.of[ServerConfig]
 
 ```
 
+
 ### Show configuration changes
 
 To see the effective configurations, use `Config.getConfigChanges` method:
 ```scala
-import wvlet.config.Config
-
-val config =
-  Config(env="development", configPaths="./config")
-
 for(change <- config.getConfigChanges) {
   println(s"[${change.key}] default:${change.default}, current:${change.current}")
 }
