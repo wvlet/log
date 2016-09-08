@@ -110,22 +110,22 @@ class ObjectTypeTest extends WvletSpec {
     }
 
     "be comparable" in {
-      val t1 = ObjectType.ofTypeTag[Person @@ Employee]
-      val t2 = ObjectType.ofTypeTag[Person @@ Customer]
-      val t3 = ObjectType.ofTypeTag[Person @@ Guest]
+      val t1 = ObjectType.of[Person @@ Employee]
+      val t2 = ObjectType.of[Person @@ Customer]
+      val t3 = ObjectType.of[Person @@ Guest]
 
       val set = Set(t1, t2)
-      set should contain (ObjectType.ofTypeTag[Person @@ Employee])
-      set should contain (ObjectType.ofTypeTag[Person @@ Customer])
-      set should not contain (ObjectType.ofTypeTag[Person @@ Guest])
+      set should contain (ObjectType.of[Person @@ Employee])
+      set should contain (ObjectType.of[Person @@ Customer])
+      set should not contain (ObjectType.of[Person @@ Guest])
 
       set should contain (t1)
       set should contain (t2)
       set should not contain (t3)
 
-      val c = ObjectType.ofTypeTag[AtomicInteger @@ Employee]
+      val c = ObjectType.of[AtomicInteger @@ Employee]
       val s = Set(c)
-      s should contain (ObjectType.ofTypeTag[AtomicInteger @@ Employee])
+      s should contain (ObjectType.of[AtomicInteger @@ Employee])
       s should contain (c)
     }
   }

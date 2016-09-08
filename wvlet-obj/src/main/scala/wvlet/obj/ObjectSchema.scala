@@ -203,7 +203,7 @@ object ObjectSchema extends LogSupport {
       val ccParams = for ((p, i) <- fstParen.zipWithIndex) yield {
         val name = p.name.decodedName.toString
         val tpe = p.typeSignature
-        ConstructorParameter(cl, findFieldOwner(name, cl), i, name, ObjectType.of(tpe))
+        ConstructorParameter(cl, findFieldOwner(name, cl), i, name, ObjectType.fromType(tpe))
       }
       val ctor = Constructor(cl, ccParams.toArray)
       Some(ctor)

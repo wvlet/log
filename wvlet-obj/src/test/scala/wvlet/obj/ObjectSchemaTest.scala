@@ -219,7 +219,7 @@ class ObjectSchemaTest extends WvletSpec {
       p.name shouldBe "pid"
       p.valueType shouldBe ObjectType.of(classOf[Int])
 
-      val intType = ObjectType.ofTypeTag[Int]
+      val intType = ObjectType.of[Int]
       val m = schema.methods.find(_.name == "getPid")
       m shouldBe 'defined
       m.get.valueType shouldBe intType
@@ -230,7 +230,7 @@ class ObjectSchemaTest extends WvletSpec {
     }
 
     "resolve alias to trait" taggedAs ("alias-type") in {
-      val tpe = ObjectType.ofTypeTag[TypeAlias.PersonAlias]
+      val tpe = ObjectType.of[TypeAlias.PersonAlias]
       tpe.name shouldBe "PersonAlias"
       tpe.fullName shouldBe "wvlet.obj.TypeAlias.PersonAlias"
       tpe.rawType shouldBe classOf[AbstractPersonTrait[String]]

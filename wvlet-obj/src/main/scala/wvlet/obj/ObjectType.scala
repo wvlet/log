@@ -31,17 +31,17 @@ object ObjectType extends LogSupport {
   def apply[A: TypeTag](obj: A): ObjectType = {
     obj match {
       case cl: Class[_] => of(cl)
-      case t: ru.Type => of(t)
-      case _ => of(typeOf[A].asInstanceOf[ru.Type])
+      case t: ru.Type => fromType(t)
+      case _ => fromType(typeOf[A].asInstanceOf[ru.Type])
     }
   }
 
-  def ofTypeTag[A : ru.WeakTypeTag] : ObjectType = {
+  def of[A : ru.WeakTypeTag] : ObjectType = {
     val tag = implicitly[ru.WeakTypeTag[A]]
-    of(tag.tpe)
+    fromType(tag.tpe)
   }
 
-  def of(tpe: ru.Type): ObjectType = {
+  def fromType(tpe: ru.Type): ObjectType = {
     def resolveType = {
       val m =
         (primitiveMatcher orElse
