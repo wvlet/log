@@ -170,6 +170,7 @@ abstract class ObjectType(val rawType: Class[_]) extends Type {
   def isOption = false
   def isBooleanType = false
   def isGenericType = false
+  def isAlias = false
   def isPrimitive: Boolean = false
   def isTextType: Boolean = false
 
@@ -194,7 +195,7 @@ case class AliasedObjectType(override val name :String, override val fullName:St
   override def isGenericType = base.isGenericType
   override def isPrimitive: Boolean = base.isPrimitive
   override def isTextType: Boolean = base.isTextType
-
+  override def isAlias: Boolean = true
   override def rawObjectType: ObjectType = base
 }
 

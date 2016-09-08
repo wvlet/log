@@ -238,8 +238,15 @@ class ObjectSchemaTest extends WvletSpec {
 
     "resolve schema of objects with type alias parameters" taggedAs("alias-param") in {
       val schema = ObjectSchema.of[ObjWithAlias]
-      info(schema)
-      info(schema.parameters)
+      val personField = schema.parameters.find(_.name == "person")
+      personField shouldBe 'defined
+      val vt = personField.get.valueType
+      info(vt)
+      vt.rawType shouldBe classOf[AbstractPersonTrait[_]]
+      vt.isAlias shouldBe true
+      vt.isGenericType shouldBe true
+      val gt = vt.rawObjectType.asInstanceOf[GenericType].genericTypes(0)
+      gt shouldBe TextType.String
     }
   }
 

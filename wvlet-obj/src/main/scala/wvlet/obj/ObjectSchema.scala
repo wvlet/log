@@ -503,37 +503,38 @@ object ObjectSchema extends LogSupport {
     case _ => None
   }
 
-  private def findAlias(prefix: scalasig.Type, e: ExternalSymbol, typeArgs: Seq[scalasig.Type]): Option[ObjectType] = {
+  private def findAlias(prefix: scalasig.Type, symbol: Symbol, typeArgs: Seq[scalasig.Type]): Option[ObjectType] = {
     for {
       prefixSymbol <- getSymbol(prefix)
       prefixClass <- Try(Class.forName(prefixSymbol.path, false, Thread.currentThread().getContextClassLoader)).toOption
       sig <- findSignature(prefixClass)
       t@TypeRefType(prefix, symbol, typeArgs) <- parseEntries(sig).collectFirst {
-        case a@AliasSymbol(symbolInfo) if a.name == e.name =>
+        case a@AliasSymbol(symbolInfo) if a.name == symbol.name =>
           sig.parseEntry(a.symbolInfo.info)
       }
+    } yield {
+      resolveClass(sig, t)
     }
-      yield {
-        resolveClass(sig, t)
-      }
   }
 
   def findClass(sig: ScalaSig, name: String, typeSignature: TypeRefType): Class[_] = {
     trace(s"resolve class: $name $typeSignature")
-    typeSignature match {
-      case TypeRefType(t, AliasSymbol(symbolInfo), typeArgs) =>
-        // alias to other type (e.g., type Id = Int)
-        trace(s"Found type alias: ${symbolInfo}")
-        sig.parseEntry(symbolInfo.info) match {
-          case t@TypeRefType(prefix, symbol, args) =>
-            findClass(sig, symbol.path, t)
-          case other =>
-            warn(s"Unknown alias type")
-            classOf[Any]
-        }
-      case other =>
-        findClassFromName(name, typeSignature.symbol)
-    }
+    findClassFromName(name, typeSignature.symbol)
+//
+//    typeSignature match {
+//      case TypeRefType(t, AliasSymbol(symbolInfo), typeArgs) =>
+//        // alias to other type (e.g., type Id = Int)
+//        trace(s"Found type alias: ${symbolInfo}")
+//        sig.parseEntry(symbolInfo.info) match {
+//          case t@TypeRefType(prefix, symbol, args) =>
+//            findClass(sig, symbol.path, t)
+//          case other =>
+//            warn(s"Unknown alias type")
+//            classOf[Any]
+//        }
+//      case other =>
+//        findClassFromName(name, typeSignature.symbol)
+//    }
   }
 
   def findClassFromName(name: String, symbol: Symbol): Class[_] = {
@@ -643,8 +644,15 @@ object ObjectSchema extends LogSupport {
         TaggedObjectType(taggedType(0), taggedType(1))
       case _ =>
         typeSignature match {
-          case TypeRefType(prefix, e@ExternalSymbol(name, parent, entry), typeArgs) =>
-            findAlias(prefix, e, typeArgs).getOrElse(defaultObjectType)
+          case TypeRefType(prefix, symbol, typeArgs) if symbol.isInstanceOf[AliasSymbol] || symbol.isInstanceOf[ExternalSymbol] =>
+            if(symbol.path.startsWith("scala.") || symbol.path.startsWith("java.lang.")) {
+              // Do not create alias to Scala/Java language objects
+              defaultObjectType
+            }
+            else {
+              val base = findAlias(prefix, symbol, typeArgs).getOrElse(defaultObjectType)
+              AliasedObjectType(name, symbol.path, base)
+            }
           case _ =>
             defaultObjectType
         }
