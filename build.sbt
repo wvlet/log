@@ -34,6 +34,11 @@ val buildSettings = Seq[Setting[_]](
       </developer>
     </developers>
   },
+  // Use sonatype resolvers
+  resolvers ++= Seq(
+    Resolver.sonatypeRepo("releases"),
+    Resolver.sonatypeRepo("snapshots")
+  ),
   // Release settings
   releaseTagName := { (version in ThisBuild).value },
   releaseProcess := Seq[ReleaseStep](
@@ -90,7 +95,7 @@ lazy val wvletConfig =
     description := "wvlet configuration module",
     libraryDependencies ++= Seq(
       "org.yaml" % "snakeyaml" % "1.14",
-      "org.wvlet" %% "airframe" % "0.6" % "test"
+      "org.wvlet" %% "airframe" % "0.8-SNAPSHOT" % "test"
     )
   ).dependsOn(wvletObj, wvletTest % "test->compile")
 

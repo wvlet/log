@@ -108,7 +108,7 @@ case class Config private[config](env: ConfigEnv, holder: Map[ObjectType, Config
   }
 
   def of[ConfigType: ru.TypeTag]: ConfigType = {
-    val t = ObjectType.ofTypeTag(implicitly[ru.TypeTag[ConfigType]])
+    val t = ObjectType.of(implicitly[ru.TypeTag[ConfigType]])
     find(t) match {
       case Some(x) =>
         x.asInstanceOf[ConfigType]
@@ -118,7 +118,7 @@ case class Config private[config](env: ConfigEnv, holder: Map[ObjectType, Config
   }
 
   def getOrElse[ConfigType:ru.TypeTag](default: => ConfigType) : ConfigType = {
-    val t = ObjectType.ofTypeTag(implicitly[ru.TypeTag[ConfigType]])
+    val t = ObjectType.of(implicitly[ru.TypeTag[ConfigType]])
     find(t) match {
       case Some(x) =>
         x.asInstanceOf[ConfigType]
@@ -128,7 +128,7 @@ case class Config private[config](env: ConfigEnv, holder: Map[ObjectType, Config
   }
 
   def defaultValueOf[ConfigType: ru.TypeTag] : ConfigType = {
-    val tpe = ObjectType.ofTypeTag(implicitly[ru.TypeTag[ConfigType]])
+    val tpe = ObjectType.of(implicitly[ru.TypeTag[ConfigType]])
     getDefaultValueOf(tpe).asInstanceOf[ConfigType]
   }
 
@@ -143,7 +143,7 @@ case class Config private[config](env: ConfigEnv, holder: Map[ObjectType, Config
   }
 
   def register[ConfigType: ru.TypeTag](config: ConfigType): Config = {
-    val tpe = ObjectType.ofTypeTag(implicitly[ru.TypeTag[ConfigType]])
+    val tpe = ObjectType.of(implicitly[ru.TypeTag[ConfigType]])
     this + ConfigHolder(tpe, config)
   }
 
@@ -153,12 +153,12 @@ case class Config private[config](env: ConfigEnv, holder: Map[ObjectType, Config
     * @return
     */
   def registerDefault[ConfigType: ru.TypeTag] : Config = {
-    val tpe = ObjectType.ofTypeTag(implicitly[ru.TypeTag[ConfigType]])
+    val tpe = ObjectType.of(implicitly[ru.TypeTag[ConfigType]])
     this + ConfigHolder(tpe, defaultValueOf[ConfigType])
   }
 
   def registerFromYaml[ConfigType: ru.TypeTag : ClassTag](yamlFile: String): Config = {
-    val tpe = ObjectType.ofTypeTag(implicitly[ru.TypeTag[ConfigType]])
+    val tpe = ObjectType.of(implicitly[ru.TypeTag[ConfigType]])
     val config: Option[ConfigType] = loadFromYaml[ConfigType](yamlFile, onMissingFile = {
       throw new FileNotFoundException(s"${yamlFile} is not found in ${env.configPaths.mkString(":")}")
     })
@@ -171,7 +171,7 @@ case class Config private[config](env: ConfigEnv, holder: Map[ObjectType, Config
   }
 
   private def loadFromYaml[ConfigType: ru.TypeTag](yamlFile: String, onMissingFile: => Option[ConfigType]): Option[ConfigType] = {
-    val tpe = ObjectType.ofTypeTag(implicitly[ru.TypeTag[ConfigType]])
+    val tpe = ObjectType.of(implicitly[ru.TypeTag[ConfigType]])
     findConfigFile(yamlFile) match {
       case None =>
         onMissingFile
@@ -193,7 +193,7 @@ case class Config private[config](env: ConfigEnv, holder: Map[ObjectType, Config
   }
 
   def registerFromYamlOrElse[ConfigType: ru.TypeTag : ClassTag](yamlFile: String, defaultValue: => ConfigType): Config = {
-    val tpe = ObjectType.ofTypeTag(implicitly[ru.TypeTag[ConfigType]])
+    val tpe = ObjectType.of(implicitly[ru.TypeTag[ConfigType]])
     val config = loadFromYaml[ConfigType](yamlFile, onMissingFile = Some(defaultValue))
     this + ConfigHolder(tpe, config.get)
   }
