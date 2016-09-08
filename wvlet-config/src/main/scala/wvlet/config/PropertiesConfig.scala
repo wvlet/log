@@ -44,7 +44,7 @@ object PropertiesConfig extends LogSupport {
       CanonicalNameFormatter.format(name)
     }
     t match {
-      case TaggedObjectType(raw, base, taggedType) =>
+      case TaggedObjectType(base, taggedType) =>
         Prefix(canonicalize(base.name), Some(CanonicalNameFormatter.format(taggedType.name)))
       case _ =>
         Prefix(canonicalize(t.name), None)

@@ -609,7 +609,7 @@ object ObjectSchema extends LogSupport {
           * )
           */
         val taggedType = resolveTypeArg
-        TaggedObjectType(taggedType(0).rawType, taggedType(0), taggedType(1))
+        TaggedObjectType(taggedType(0), taggedType(1))
       case _ =>
         toObjectType(findClass(sig, name, typeSignature))
     }

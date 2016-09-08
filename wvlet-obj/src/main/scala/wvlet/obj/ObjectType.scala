@@ -36,7 +36,8 @@ object ObjectType extends LogSupport {
     }
   }
 
-  def ofTypeTag[A](implicit tag: ru.WeakTypeTag[A]) : ObjectType = {
+  def ofTypeTag[A : ru.WeakTypeTag] : ObjectType = {
+    val tag = implicitly[ru.WeakTypeTag[A]]
     of(tag.tpe)
   }
 
@@ -82,6 +83,16 @@ object ObjectType extends LogSupport {
     }
   }
 
+  private def resolveObjectType(tpe:ru.Type, typeArgs:List[ru.Type]) : ObjectType = {
+    val cl = resolveClass(tpe)
+    if (typeArgs.isEmpty) {
+      of(cl)
+    }
+    else {
+      GenericType(cl, typeArgs.map(apply(_)))
+    }
+  }
+
   def typeRefMatcher: PartialFunction[ru.Type, ObjectType] = {
     case t if t =:= typeOf[scala.Any] => AnyRefType
     case tagged@TypeRef(_ ,tn, typeArgs) if tn.fullName == "wvlet.obj.tag.$at$at" =>
@@ -98,15 +109,12 @@ object ObjectType extends LogSupport {
       if(resolved.size != 2) {
         throw new IllegalStateException(s"Tagged type size should be 2: ${tagged}")
       }
-      TaggedObjectType(resolved(0).rawType, resolved(0), resolved(1))
+      TaggedObjectType(resolved(0), resolved(1))
+    case tpe@TypeRef(pre, symbol, typeArgs) if symbol.isType && symbol.asType.isAliasType =>
+      val base = resolveObjectType(tpe, typeArgs)
+      AliasedObjectType(symbol.name.decodedName.toString, symbol.fullName, base)
     case tpe@TypeRef(pre, symbol, typeArgs) =>
-      val cl = resolveClass(tpe)
-      if (typeArgs.isEmpty) {
-        of(cl)
-      }
-      else {
-        GenericType(cl, typeArgs.map(apply(_)))
-      }
+      resolveObjectType(tpe, typeArgs)
     case tpe@ExistentialType(tpeLst, TypeRef(pre, symbol, typeArgs)) =>
       // Handle TypeName[A, ..]
       val cl = resolveClass(tpe)
@@ -166,10 +174,23 @@ abstract class ObjectType(val rawType: Class[_]) extends Type {
   def isTextType: Boolean = false
 }
 
-case class TaggedObjectType(override val rawType:Class[_], base:ObjectType, tagType:ObjectType) extends ObjectType(rawType) {
+case class TaggedObjectType(base:ObjectType, tagType:ObjectType) extends ObjectType(base.rawType) {
   override val name : String = s"${base.name}@@${tagType.name}"
+  override def fullName = s"${base.fullName}@@${tagType.name}"
+  override def isOption = base.isOption
+  override def isBooleanType = base.isBooleanType
+  override def isGenericType = base.isGenericType
+  override def isPrimitive: Boolean = base.isPrimitive
+  override def isTextType: Boolean = base.isTextType
 }
 
+case class AliasedObjectType(override val name :String, override val fullName:String, base:ObjectType) extends ObjectType(base.rawType) {
+  override def isOption = base.isOption
+  override def isBooleanType = base.isBooleanType
+  override def isGenericType = base.isGenericType
+  override def isPrimitive: Boolean = base.isPrimitive
+  override def isTextType: Boolean = base.isTextType
+}
 
 trait ValueObject extends ObjectType {
   override val name: String = this.getClass.getSimpleName.replaceAll("""\$""", "")
