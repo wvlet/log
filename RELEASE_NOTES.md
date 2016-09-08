@@ -1,5 +1,10 @@
 Release Notes
 ====
+0.24
+ * wvlet-obj
+    - Add ObjectType.of[A]
+    - Support ObjectType.of[(alias to type)]
+
 0.23
  * wvlet-log
     - Terminate log scanner thread automatically
