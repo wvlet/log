@@ -172,6 +172,8 @@ abstract class ObjectType(val rawType: Class[_]) extends Type {
   def isGenericType = false
   def isPrimitive: Boolean = false
   def isTextType: Boolean = false
+
+  def rawObjectType: ObjectType = this
 }
 
 case class TaggedObjectType(base:ObjectType, tagType:ObjectType) extends ObjectType(base.rawType) {
@@ -182,6 +184,8 @@ case class TaggedObjectType(base:ObjectType, tagType:ObjectType) extends ObjectT
   override def isGenericType = base.isGenericType
   override def isPrimitive: Boolean = base.isPrimitive
   override def isTextType: Boolean = base.isTextType
+
+  override def rawObjectType: ObjectType = base
 }
 
 case class AliasedObjectType(override val name :String, override val fullName:String, base:ObjectType) extends ObjectType(base.rawType) {
@@ -190,6 +194,8 @@ case class AliasedObjectType(override val name :String, override val fullName:St
   override def isGenericType = base.isGenericType
   override def isPrimitive: Boolean = base.isPrimitive
   override def isTextType: Boolean = base.isTextType
+
+  override def rawObjectType: ObjectType = base
 }
 
 trait ValueObject extends ObjectType {
