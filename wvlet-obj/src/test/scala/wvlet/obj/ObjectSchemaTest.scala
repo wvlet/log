@@ -235,6 +235,12 @@ class ObjectSchemaTest extends WvletSpec {
       tpe.fullName shouldBe "wvlet.obj.TypeAlias.PersonAlias"
       tpe.rawType shouldBe classOf[AbstractPersonTrait[String]]
     }
+
+    "resolve schema of objects with type alias parameters" taggedAs("alias-param") in {
+      val schema = ObjectSchema.of[ObjWithAlias]
+      info(schema)
+      info(schema.parameters)
+    }
   }
 
 }
@@ -316,4 +322,8 @@ object TypeAlias {
   trait AbstractPersonTrait[A] {
     def apply: A
   }
+}
+
+trait ObjWithAlias {
+  val person : TypeAlias.PersonAlias
 }
