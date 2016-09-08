@@ -231,9 +231,8 @@ class ObjectSchemaTest extends WvletSpec {
 
     "resolve alias to trait" taggedAs ("alias-type") in {
       val tpe = ObjectType.ofTypeTag[TypeAlias.PersonAlias]
-      info(tpe)
-      info(tpe.fullName)
       tpe.name shouldBe "PersonAlias"
+      tpe.fullName shouldBe "wvlet.obj.TypeAlias.PersonAlias"
       tpe.rawType shouldBe classOf[AbstractPersonTrait[String]]
     }
   }
