@@ -503,7 +503,7 @@ object ObjectSchema extends LogSupport {
     case _ => None
   }
 
-  private def findAlias(prefix: scalasig.Type, e: ExternalSymbol): Option[Class[_]] = {
+  private def findAlias(prefix: scalasig.Type, e: ExternalSymbol, typeArgs: Seq[scalasig.Type]): Option[ObjectType] = {
     for {
       prefixSymbol <- getSymbol(prefix)
       prefixClass <- Try(Class.forName(prefixSymbol.path, false, Thread.currentThread().getContextClassLoader)).toOption
@@ -513,9 +513,9 @@ object ObjectSchema extends LogSupport {
           sig.parseEntry(a.symbolInfo.info)
       }
     }
-    yield {
-      findClass(sig, symbol.name, t)
-    }
+      yield {
+        resolveClass(sig, t)
+      }
   }
 
   def findClass(sig: ScalaSig, name: String, typeSignature: TypeRefType): Class[_] = {
@@ -530,11 +530,6 @@ object ObjectSchema extends LogSupport {
           case other =>
             warn(s"Unknown alias type")
             classOf[Any]
-        }
-      case TypeRefType(p: SingleType, e@ExternalSymbol(name, parent, entry), typeArgs) =>
-        findAlias(p, e).getOrElse {
-          warn(s"Unknown alias type: ${e.name}")
-          classOf[Any]
         }
       case other =>
         findClassFromName(name, typeSignature.symbol)
@@ -616,6 +611,8 @@ object ObjectSchema extends LogSupport {
       }
     }
 
+    def defaultObjectType = toObjectType(findClass(sig, name, typeSignature))
+
     val result = name match {
       case "scala.Array" =>
         // primitive type array
@@ -645,9 +642,13 @@ object ObjectSchema extends LogSupport {
         val taggedType = resolveTypeArg
         TaggedObjectType(taggedType(0), taggedType(1))
       case _ =>
-        toObjectType(findClass(sig, name, typeSignature))
+        typeSignature match {
+          case TypeRefType(prefix, e@ExternalSymbol(name, parent, entry), typeArgs) =>
+            findAlias(prefix, e, typeArgs).getOrElse(defaultObjectType)
+          case _ =>
+            defaultObjectType
+        }
     }
-
 
     trace(s"resolveClass: ${typeSignature} => ${result}")
     result
