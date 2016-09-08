@@ -145,7 +145,7 @@ trait StandardBuilder[ParamType <: Parameter] extends GenericBuilder with LogSup
       val valueType = p.get.valueType
       trace(s"update value holder name:$name, valueType:$valueType (isArray:${TypeUtil.isArray(valueType.rawType)}) with value:$value")
       if (canBuildFromBuffer(valueType.rawType)) {
-        val t = valueType.asInstanceOf[GenericType]
+        val t = valueType.rawObjectType.asInstanceOf[GenericType]
         val gt = t.genericTypes(0)
 
         holder.get(name) match {

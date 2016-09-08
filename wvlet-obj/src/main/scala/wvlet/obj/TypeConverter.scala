@@ -38,7 +38,7 @@ object TypeConverter extends LogSupport {
         Some(value)
       }
       else {
-        val gt: Seq[ObjectType] = targetType.asInstanceOf[GenericType].genericTypes
+        val gt: Seq[ObjectType] = targetType.rawObjectType.asInstanceOf[GenericType].genericTypes
         Some(convert(value, gt(0)))
       }
     }
@@ -54,7 +54,7 @@ object TypeConverter extends LogSupport {
       else if (TypeUtil.isBuffer(s)) {
         debug(s"convert buffer $value into $targetType")
         val buf = value.asInstanceOf[mutable.Buffer[_]]
-        val gt: Seq[ObjectType] = targetType.asInstanceOf[GenericType].genericTypes
+        val gt: Seq[ObjectType] = targetType.rawObjectType.asInstanceOf[GenericType].genericTypes
         val e = gt(0).rawType
         type E = e.type
         if (TypeUtil.isArray(t)) {

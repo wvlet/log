@@ -15,7 +15,7 @@
 package wvlet.obj
 
 import org.scalatest.Tag
-import wvlet.log.{LogLevel, Logger}
+import wvlet.obj.TypeAlias.AbstractPersonTrait
 import wvlet.test.WvletSpec
 
 import scala.io.Source
@@ -228,6 +228,13 @@ class ObjectSchemaTest extends WvletSpec {
       l shouldBe 'defined
       l.get.params(0).valueType shouldBe intType
     }
+
+    "resolve alias to trait" taggedAs ("alias-type") in {
+      val tpe = ObjectType.ofTypeTag[TypeAlias.PersonAlias]
+      tpe.name shouldBe "PersonAlias"
+      tpe.fullName shouldBe "wvlet.obj.TypeAlias.PersonAlias"
+      tpe.rawType shouldBe classOf[AbstractPersonTrait[String]]
+    }
   }
 
 }
@@ -299,8 +306,14 @@ object TypeAlias {
   case class Person(pid: PersonID) {
     def getPid: PersonID = pid
 
-    def hasSamePid(other:PersonID) : Boolean = {
+    def hasSamePid(other: PersonID): Boolean = {
       pid == other
     }
+  }
+
+  type PersonAlias = AbstractPersonTrait[String]
+
+  trait AbstractPersonTrait[A] {
+    def apply: A
   }
 }
