@@ -305,9 +305,9 @@ object ObjectSchema extends LogSupport {
       //      case (name: String, t @ TypeRefType(prefix, symbol, Seq(tp : TypeRefType))) =>
       //        (name, resolveClass(tp))
       case (name: String, t: TypeRefType) =>
-        (name, resolveClass(sig, t))
+        (name, resolveObjectType(sig, t))
       case (name: String, ExistentialType(tref: TypeRefType, symbols)) =>
-        (name, resolveClass(sig, tref))
+        (name, resolveObjectType(sig, tref))
     }
   }
 
@@ -363,7 +363,7 @@ object ObjectSchema extends LogSupport {
           case m: MethodSymbol if isFieldReader(m) => {
             entries(m.symbolInfo.info) match {
               case NullaryMethodType(resultType: TypeRefType) =>
-                Some(FieldParameter(cl, cl, m.name, resolveClass(sig, resultType)))
+                Some(FieldParameter(cl, cl, m.name, resolveObjectType(sig, resultType)))
               case other =>
                 None
             }
@@ -428,7 +428,7 @@ object ObjectSchema extends LogSupport {
           try {
             val mt = cl.getMethod(name, paramTypes: _*)
             val mp = for (((name, vt), index) <- params.zipWithIndex) yield MethodParameter(mt, index, name, vt)
-            Some(ScMethod(cl, mt, name, mp.toArray, resolveClass(sig, resultType)))
+            Some(ScMethod(cl, mt, name, mp.toArray, resolveObjectType(sig, resultType)))
           }
           catch {
             case e: NoSuchMethodException => {
@@ -438,7 +438,7 @@ object ObjectSchema extends LogSupport {
                   co =>
                     val mt = co.getMethod(name, paramTypes: _*)
                     val mp = for (((name, vt), index) <- params.zipWithIndex) yield MethodParameter(mt, index, name, vt)
-                    CompanionMethod(co, mt, name, mp.toArray, resolveClass(sig, resultType))
+                    CompanionMethod(co, mt, name, mp.toArray, resolveObjectType(sig, resultType))
                 }
               }
               catch {
@@ -498,12 +498,14 @@ object ObjectSchema extends LogSupport {
 
   private def getSymbol(t: scalasig.Type): Option[Symbol] = t match {
     case TypeRefType(_, s, _) => Some(s)
+    case ThisType(s) => Some(s)
     case SingleType(_, s) => Some(s)
     case PolyType(typeRef, _) => getSymbol(typeRef)
     case _ => None
   }
 
   private def findAlias(prefix: scalasig.Type, symbol: Symbol, typeArgs: Seq[scalasig.Type]): Option[ObjectType] = {
+    trace(s"findAlias:${prefix}, ${symbol}, ${typeArgs}")
     for {
       prefixSymbol <- getSymbol(prefix)
       prefixClass <- Try(Class.forName(prefixSymbol.path, false, Thread.currentThread().getContextClassLoader)).toOption
@@ -513,32 +515,12 @@ object ObjectSchema extends LogSupport {
           sig.parseEntry(a.symbolInfo.info)
       }
     } yield {
-      resolveClass(sig, t)
+      resolveObjectType(sig, t)
     }
   }
 
-  def findClass(sig: ScalaSig, name: String, typeSignature: TypeRefType): Class[_] = {
-    trace(s"resolve class: $name $typeSignature")
-    findClassFromName(name, typeSignature.symbol)
-//
-//    typeSignature match {
-//      case TypeRefType(t, AliasSymbol(symbolInfo), typeArgs) =>
-//        // alias to other type (e.g., type Id = Int)
-//        trace(s"Found type alias: ${symbolInfo}")
-//        sig.parseEntry(symbolInfo.info) match {
-//          case t@TypeRefType(prefix, symbol, args) =>
-//            findClass(sig, symbol.path, t)
-//          case other =>
-//            warn(s"Unknown alias type")
-//            classOf[Any]
-//        }
-//      case other =>
-//        findClassFromName(name, typeSignature.symbol)
-//    }
-  }
-
-  def findClassFromName(name: String, symbol: Symbol): Class[_] = {
-    trace(s"findClassFromName($name, $symbol)")
+  def resolveClassFromName(name: String, symbol: Symbol): Class[_] = {
+    trace(s"resolveClassFromName($name, $symbol)")
     name match {
       // Resolve classes of primitive types.
       // This special treatment is necessary because classes of primitive types, classOf[scala.Int] etc. are converted by
@@ -589,11 +571,11 @@ object ObjectSchema extends LogSupport {
 
   }
 
-  def resolveClass(sig: ScalaSig, typeSignature: TypeRefType): ObjectType = {
+  def resolveObjectType(sig: ScalaSig, typeSignature: TypeRefType): ObjectType = {
     val name = typeSignature.symbol.path
 
     def resolveTypeArg: Seq[ObjectType] = typeSignature.typeArgs.collect {
-      case x: TypeRefType if !(x.symbol.name.startsWith("_$")) => resolveClass(sig, x)
+      case x: TypeRefType if !(x.symbol.name.startsWith("_$")) => resolveObjectType(sig, x)
       case other => AnyRefType
     }
 
@@ -612,7 +594,7 @@ object ObjectSchema extends LogSupport {
       }
     }
 
-    def defaultObjectType = toObjectType(findClass(sig, name, typeSignature))
+    def defaultObjectType = toObjectType(resolveClassFromName(name, typeSignature.symbol))
 
     val result = name match {
       case "scala.Array" =>
@@ -645,6 +627,7 @@ object ObjectSchema extends LogSupport {
       case _ =>
         typeSignature match {
           case TypeRefType(prefix, symbol, typeArgs) if symbol.isInstanceOf[AliasSymbol] || symbol.isInstanceOf[ExternalSymbol] =>
+            trace(s"Alias type: ${typeSignature}, path:${symbol.path}")
             if(symbol.path.startsWith("scala.") || symbol.path.startsWith("java.lang.")) {
               // Do not create alias to Scala/Java language objects
               defaultObjectType
@@ -658,7 +641,7 @@ object ObjectSchema extends LogSupport {
         }
     }
 
-    trace(s"resolveClass: ${typeSignature} => ${result}")
+    trace(s"resolveObjectType: [${result} raw:${result.rawObjectType}] <= ${typeSignature}")
     result
   }
 

@@ -164,9 +164,10 @@ trait ObjectMethod extends ObjectParameter with Type {
   * @param rawType
   */
 abstract class ObjectType(val rawType: Class[_]) extends Type {
+  override def toString = name
   val name: String = this.getClass.getSimpleName
   def fullName: String = this.getClass.getName
-  override def toString = name
+
   def isOption = false
   def isBooleanType = false
   def isGenericType = false
