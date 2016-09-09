@@ -1,5 +1,9 @@
 Release Notes
 ====
+0.25
+ * [wvlet-obj] Improved type alias support
+ * [wvlet-log] Remove Logger JMX interface (we can use java.util.logging instead) 
+
 0.24
  * wvlet-obj
     - Add ObjectType.of[A]
