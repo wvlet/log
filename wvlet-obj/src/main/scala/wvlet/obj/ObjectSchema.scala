@@ -21,11 +21,10 @@ import wvlet.obj.ObjectBuilder.CanonicalNameFormatter
 
 import scala.collection.mutable.WeakHashMap
 import scala.language.implicitConversions
-import scala.reflect.ClassTag
 import scala.reflect.internal.MissingRequirementError
+import scala.tools.scalap.scalax.rules.scalasig
 import scala.tools.scalap.scalax.rules.scalasig._
 import scala.util.{Failure, Success, Try}
-
 
 /**
   * Contains information of methods, constructor and parameters defined in a class
@@ -45,8 +44,8 @@ case class ObjectSchema(cl: Class[_], parameters: Seq[Parameter]) extends LogSup
 
   def findSignature: Option[ScalaSig] = ObjectSchema.findSignature(cl)
 
-  lazy val methods: Seq[ObjectMethod] = publicMethodsOf(cl)
-  lazy val allMethods : Seq[ObjectMethod] = allMethodsOf(cl)
+  lazy val methods   : Seq[ObjectMethod] = publicMethodsOf(cl)
+  lazy val allMethods: Seq[ObjectMethod] = allMethodsOf(cl)
 
   lazy private val parameterIndex: Map[String, Parameter] = {
     val pair = for (a <- parameters) yield CanonicalNameFormatter.format(a.name) -> a
@@ -82,19 +81,19 @@ case class ObjectSchema(cl: Class[_], parameters: Seq[Parameter]) extends LogSup
   }
 }
 
-
-
-
 /**
   * Object information extractor
+  *
   * @since 2012/01/17 10:05
   */
 object ObjectSchema extends LogSupport {
 
   import TypeUtil._
 
+  import scala.reflect.runtime.{universe => ru}
+
   private val schemaTable = new WeakHashMap[Class[_], ObjectSchema]
-  private val sigCache = new WeakHashMap[Class[_], Option[ScalaSig]]
+  private val sigCache    = new WeakHashMap[Class[_], Option[ScalaSig]]
 
   /**
     * Get the object schema of the specified ObjectType. This method caches previously created ObjectSchema instances, and
@@ -102,14 +101,18 @@ object ObjectSchema extends LogSupport {
     */
   def apply(cl: Class[_]): ObjectSchema = schemaTable.getOrElseUpdate(cl, createSchema(cl))
 
-  def of(tpe: ObjectType) : ObjectSchema = ObjectSchema(tpe.rawType)
+  def of(tpe: ObjectType): ObjectSchema = ObjectSchema(tpe.rawType)
 
   private def createSchema(cl: Class[_]): ObjectSchema = {
     trace(s"createSchema of ${cl}")
     new ObjectSchema(cl, parametersOf(cl))
   }
 
-  def of[A](implicit m: ClassTag[A]): ObjectSchema = apply(m.runtimeClass)
+  def of[A](implicit m: ru.TypeTag[A]): ObjectSchema = {
+    val dealiased = m.tpe.dealias
+    apply(ObjectType.mirror.runtimeClass(dealiased))
+  }
+
   def getSchemaOf(obj: Any): ObjectSchema = apply(cls(obj))
 
   private def findClass(name: String): Option[Class[_]] = {
@@ -302,9 +305,9 @@ object ObjectSchema extends LogSupport {
       //      case (name: String, t @ TypeRefType(prefix, symbol, Seq(tp : TypeRefType))) =>
       //        (name, resolveClass(tp))
       case (name: String, t: TypeRefType) =>
-        (name, resolveClass(sig, t))
+        (name, resolveObjectType(sig, t))
       case (name: String, ExistentialType(tref: TypeRefType, symbols)) =>
-        (name, resolveClass(sig, tref))
+        (name, resolveObjectType(sig, tref))
     }
   }
 
@@ -332,8 +335,6 @@ object ObjectSchema extends LogSupport {
     findSignature(cl) match {
       case None => Seq.empty
       case Some(sig) => {
-        val entries = parseEntries(sig)
-
         val parents = findParentSchemas(cl)
         val parentParams = parents.flatMap {
           p => p.parameters
@@ -357,11 +358,12 @@ object ObjectSchema extends LogSupport {
             m.symbolInfo.privateWithin.isEmpty
         }
 
+        val entries = parseEntries(sig)
         val fieldParams = entries.collect {
           case m: MethodSymbol if isFieldReader(m) => {
             entries(m.symbolInfo.info) match {
               case NullaryMethodType(resultType: TypeRefType) =>
-                Some(FieldParameter(cl, cl, m.name, resolveClass(sig, resultType)))
+                Some(FieldParameter(cl, cl, m.name, resolveObjectType(sig, resultType)))
               case other =>
                 None
             }
@@ -381,7 +383,7 @@ object ObjectSchema extends LogSupport {
     methodsOf(cl, { m => !m.isPrivate && !m.isProtected })
   }
 
-  def allMethodsOf(cl:Class[_]) : Array[ObjectMethod] = {
+  def allMethodsOf(cl: Class[_]): Array[ObjectMethod] = {
     methodsOf(cl, { m => true })
   }
 
@@ -426,7 +428,7 @@ object ObjectSchema extends LogSupport {
           try {
             val mt = cl.getMethod(name, paramTypes: _*)
             val mp = for (((name, vt), index) <- params.zipWithIndex) yield MethodParameter(mt, index, name, vt)
-            Some(ScMethod(cl, mt, name, mp.toArray, resolveClass(sig, resultType)))
+            Some(ScMethod(cl, mt, name, mp.toArray, resolveObjectType(sig, resultType)))
           }
           catch {
             case e: NoSuchMethodException => {
@@ -436,7 +438,7 @@ object ObjectSchema extends LogSupport {
                   co =>
                     val mt = co.getMethod(name, paramTypes: _*)
                     val mp = for (((name, vt), index) <- params.zipWithIndex) yield MethodParameter(mt, index, name, vt)
-                    CompanionMethod(co, mt, name, mp.toArray, resolveClass(sig, resultType))
+                    CompanionMethod(co, mt, name, mp.toArray, resolveObjectType(sig, resultType))
                 }
               }
               catch {
@@ -494,76 +496,86 @@ object ObjectSchema extends LogSupport {
 
   import scala.language.existentials
 
-  def findClass(sig:ScalaSig, name: String, typeSignature: TypeRefType) : Class[_] = {
-    trace(s"resolve class: $name $typeSignature")
+  private def getSymbol(t: scalasig.Type): Option[Symbol] = t match {
+    case TypeRefType(_, s, _) => Some(s)
+    case ThisType(s) => Some(s)
+    case SingleType(_, s) => Some(s)
+    case PolyType(typeRef, _) => getSymbol(typeRef)
+    case _ => None
+  }
 
-    typeSignature match {
-      case TypeRefType(t, AliasSymbol(symbolInfo), typeArgs) =>
-        // alias to other type (e.g., type Id = Int)
-        trace(s"Found type alias: ${symbolInfo}")
-        sig.parseEntry(symbolInfo.info) match {
-          case t@TypeRefType(prefix, symbol, args) =>
-            findClass(sig, symbol.path, t)
-          case other =>
-            warn(s"Unknown alias type")
-            classOf[Any]
-        }
-      case other =>
-        name match {
-          // Resolve classes of primitive types.
-          // This special treatment is necessary because classes of primitive types, classOf[scala.Int] etc. are converted by
-          // Scala compiler into Java primitive types (e.g., int, float). So classOf[Int] is represented as classOf[int] internally.
-          case "scala.Boolean" => classOf[Boolean]
-          case "scala.Byte" => classOf[Byte]
-          case "scala.Short" => classOf[Short]
-          case "scala.Char" => classOf[Char]
-          case "scala.Int" => classOf[Int]
-          case "scala.Float" => classOf[Float]
-          case "scala.Long" => classOf[Long]
-          case "scala.Double" => classOf[Double]
-          case "scala.Predef.String" => classOf[String]
-          // Map and Set type names are defined in Scala.Predef
-          case "scala.Predef.Map" => classOf[Map[_, _]]
-          case "scala.Predef.Set" => classOf[Set[_]]
-          case "scala.Predef.Class" => classOf[Class[_]]
-          case "scala.package.Throwable" => classOf[Throwable]
-          case "scala.package.Exception" => classOf[Exception]
-          case "scala.package.Error" => classOf[Error]
-          case "scala.package.IndexedSeq" => classOf[IndexedSeq[_]]
-          case "scala.package.Seq" => classOf[Seq[_]]
-          case "scala.package.List" => classOf[List[_]]
-          case "scala.package.Iterator" => classOf[Iterator[_]]
-          case "scala.Any" => classOf[Any]
-          case "scala.AnyRef" => classOf[AnyRef]
-          case "scala.Array" => classOf[Array[_]]
-          case "scala.Unit" => Unit.getClass
-          case _ if typeSignature.symbol.isDeferred => classOf[AnyRef]
-          case _ =>
-            // Find the class using the context class loader
-            val loader = Thread.currentThread().getContextClassLoader
-            Try(loader.loadClass(name)) match {
-              case Success(cl) =>
-                cl
-              case Failure(e) =>
-                // When the class is defined in an object, its class name has suffix '$' like "xerial.silk.SomeTest$A"
-                val parent = typeSignature.symbol.parent
-                val anotherClassName = "%s$%s".format(if (parent.isDefined) parent.get.path else "", typeSignature.symbol.name)
-                Try(loader.loadClass(anotherClassName)) match {
-                  case Success(cl) => cl
-                  case Failure(e) =>
-                    warn(s"No corresponding class for ${name} is found", e)
-                    classOf[Any]
-                }
-            }
-        }
+  private def findAlias(prefix: scalasig.Type, symbol: Symbol, typeArgs: Seq[scalasig.Type]): Option[ObjectType] = {
+    trace(s"findAlias:${prefix}, ${symbol}, ${typeArgs}")
+    for {
+      prefixSymbol <- getSymbol(prefix)
+      prefixClass <- Try(Class.forName(prefixSymbol.path, false, Thread.currentThread().getContextClassLoader)).toOption
+      sig <- findSignature(prefixClass)
+      t@TypeRefType(prefix, symbol, typeArgs) <- parseEntries(sig).collectFirst {
+        case a@AliasSymbol(symbolInfo) if a.name == symbol.name =>
+          sig.parseEntry(a.symbolInfo.info)
+      }
+    } yield {
+      resolveObjectType(sig, t)
     }
   }
 
-  def resolveClass(sig:ScalaSig, typeSignature: TypeRefType): ObjectType = {
+  def resolveClassFromName(name: String, symbol: Symbol): Class[_] = {
+    trace(s"resolveClassFromName($name, $symbol)")
+    name match {
+      // Resolve classes of primitive types.
+      // This special treatment is necessary because classes of primitive types, classOf[scala.Int] etc. are converted by
+      // Scala compiler into Java primitive types (e.g., int, float). So classOf[Int] is represented as classOf[int] internally.
+      case "scala.Boolean" => classOf[Boolean]
+      case "scala.Byte" => classOf[Byte]
+      case "scala.Short" => classOf[Short]
+      case "scala.Char" => classOf[Char]
+      case "scala.Int" => classOf[Int]
+      case "scala.Float" => classOf[Float]
+      case "scala.Long" => classOf[Long]
+      case "scala.Double" => classOf[Double]
+      case "scala.Predef.String" => classOf[String]
+      // Map and Set type names are defined in Scala.Predef
+      case "scala.Predef.Map" => classOf[Map[_, _]]
+      case "scala.Predef.Set" => classOf[Set[_]]
+      case "scala.Predef.Class" => classOf[Class[_]]
+      case "scala.package.Throwable" => classOf[Throwable]
+      case "scala.package.Exception" => classOf[Exception]
+      case "scala.package.Error" => classOf[Error]
+      case "scala.package.IndexedSeq" => classOf[IndexedSeq[_]]
+      case "scala.package.Seq" => classOf[Seq[_]]
+      case "scala.package.List" => classOf[List[_]]
+      case "scala.package.Iterator" => classOf[Iterator[_]]
+      case "scala.Any" => classOf[Any]
+      case "scala.AnyRef" => classOf[AnyRef]
+      case "scala.Array" => classOf[Array[_]]
+      case "scala.Unit" => Unit.getClass
+      case _ if symbol.isDeferred => classOf[AnyRef]
+      case _ =>
+        // Find the class using the context class loader
+        val loader = Thread.currentThread().getContextClassLoader
+        Try(loader.loadClass(name)) match {
+          case Success(cl) =>
+            cl
+          case Failure(e) =>
+            // When the class is defined in an object, its class name has suffix '$' like "xerial.silk.SomeTest$A"
+            val parent = symbol.parent
+            val anotherClassName = "%s$%s".format(if (parent.isDefined) parent.get.path else "", symbol.name)
+            Try(loader.loadClass(anotherClassName)) match {
+              case Success(cl) => cl
+              case Failure(e) =>
+                warn(s"No corresponding class for ${name} is found", e)
+                classOf[Any]
+            }
+        }
+    }
+
+  }
+
+  def resolveObjectType(sig: ScalaSig, typeSignature: TypeRefType): ObjectType = {
     val name = typeSignature.symbol.path
 
     def resolveTypeArg: Seq[ObjectType] = typeSignature.typeArgs.collect {
-      case x: TypeRefType if !(x.symbol.name.startsWith("_$")) => resolveClass(sig, x)
+      case x: TypeRefType if !(x.symbol.name.startsWith("_$")) => resolveObjectType(sig, x)
       case other => AnyRefType
     }
 
@@ -573,7 +585,7 @@ object ObjectSchema extends LogSupport {
           ObjectType.of(cl)
         case _ =>
           val resolved = resolveTypeArg
-          if(resolved.size == 1 && resolved(0).isInstanceOf[TaggedObjectType]) {
+          if (resolved.size == 1 && resolved(0).isInstanceOf[TaggedObjectType]) {
             resolved(0)
           }
           else {
@@ -581,6 +593,8 @@ object ObjectSchema extends LogSupport {
           }
       }
     }
+
+    def defaultObjectType = toObjectType(resolveClassFromName(name, typeSignature.symbol))
 
     val result = name match {
       case "scala.Array" =>
@@ -596,26 +610,38 @@ object ObjectSchema extends LogSupport {
         trace(s"type signature: ${typeSignature.typeArgs}")
         /**
           * List(
-          *    TypeRefType(
-          *      ThisType(ClassSymbol(ServiceMixinExample, owner=wvlet.helix, flags=400, info=11 ,None)),
-          *      ClassSymbol(Fruit, owner=9, flags=40, info=485 ,None),
-          *      List()
-          *    ),
-          *    TypeRefType(
-          *      ThisType(ClassSymbol(ServiceMixinExample, owner=wvlet.helix, flags=400, info=11 ,None)),
-          *      ClassSymbol(Apple, owner=9, flags=2000880, info=530 ,None),
-          *      List()
-          *    )
+          * TypeRefType(
+          * ThisType(ClassSymbol(ServiceMixinExample, owner=wvlet.helix, flags=400, info=11 ,None)),
+          * ClassSymbol(Fruit, owner=9, flags=40, info=485 ,None),
+          * List()
+          * ),
+          * TypeRefType(
+          * ThisType(ClassSymbol(ServiceMixinExample, owner=wvlet.helix, flags=400, info=11 ,None)),
+          * ClassSymbol(Apple, owner=9, flags=2000880, info=530 ,None),
+          * List()
+          * )
           * )
           */
         val taggedType = resolveTypeArg
         TaggedObjectType(taggedType(0), taggedType(1))
       case _ =>
-        toObjectType(findClass(sig, name, typeSignature))
+        typeSignature match {
+          case TypeRefType(prefix, symbol, typeArgs) if symbol.isInstanceOf[AliasSymbol] || symbol.isInstanceOf[ExternalSymbol] =>
+            trace(s"Alias type: ${typeSignature}, path:${symbol.path}")
+            if(symbol.path.startsWith("scala.") || symbol.path.startsWith("java.lang.")) {
+              // Do not create alias to Scala/Java language objects
+              defaultObjectType
+            }
+            else {
+              val base = findAlias(prefix, symbol, typeArgs).getOrElse(defaultObjectType)
+              AliasedObjectType(name, symbol.path, base)
+            }
+          case _ =>
+            defaultObjectType
+        }
     }
 
-
-    trace(s"resolveClass: ${typeSignature} => ${result}")
+    trace(s"resolveObjectType: [${result} raw:${result.rawObjectType}] <= ${typeSignature}")
     result
   }
 

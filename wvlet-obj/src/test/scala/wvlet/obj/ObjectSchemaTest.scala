@@ -222,11 +222,11 @@ class ObjectSchemaTest extends WvletSpec {
       val intType = ObjectType.of[Int]
       val m = schema.methods.find(_.name == "getPid")
       m shouldBe 'defined
-      m.get.valueType shouldBe intType
+      m.get.valueType.rawObjectType shouldBe intType
 
       val l = schema.methods.find(_.name == "hasSamePid")
       l shouldBe 'defined
-      l.get.params(0).valueType shouldBe intType
+      l.get.params(0).valueType.rawObjectType shouldBe intType
     }
 
     "resolve alias to trait" taggedAs ("alias-type") in {
@@ -234,6 +234,19 @@ class ObjectSchemaTest extends WvletSpec {
       tpe.name shouldBe "PersonAlias"
       tpe.fullName shouldBe "wvlet.obj.TypeAlias.PersonAlias"
       tpe.rawType shouldBe classOf[AbstractPersonTrait[String]]
+    }
+
+    "resolve schema of objects with type alias parameters" taggedAs("alias-param") in {
+      val schema = ObjectSchema.of[ObjWithAlias]
+      val personField = schema.parameters.find(_.name == "person")
+      personField shouldBe 'defined
+      val vt = personField.get.valueType
+      info(vt)
+      vt.rawType shouldBe classOf[AbstractPersonTrait[_]]
+      vt.isAlias shouldBe true
+      vt.isGenericType shouldBe true
+      val gt = vt.rawObjectType.asInstanceOf[GenericType].genericTypes(0)
+      gt shouldBe TextType.String
     }
   }
 
@@ -316,4 +329,8 @@ object TypeAlias {
   trait AbstractPersonTrait[A] {
     def apply: A
   }
+}
+
+trait ObjWithAlias {
+  val person : TypeAlias.PersonAlias
 }

@@ -18,11 +18,11 @@ import wvlet.core._
 import wvlet.log.LogSupport
 import wvlet.obj.{ObjectSchema, Primitive, TextType, TypeUtil}
 
-import scala.reflect.ClassTag
+import scala.reflect.runtime.{universe => ru}
 
 object ObjectWriter {
 
-  def createScheamOf[A: ClassTag](name: String): Schema = {
+  def createScheamOf[A: ru.TypeTag](name: String): Schema = {
     val schema = ObjectSchema.of[A]
     val tabletColumnTypes: Seq[Column] = for (p <- schema.parameters) yield {
       val vt = p.valueType
