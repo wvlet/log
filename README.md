@@ -5,6 +5,10 @@
 [coverall-badge-svg]: https://coveralls.io/repos/github/wvlet/log/badge.svg?branch=master
 [coverall-link]: https://coveralls.io/github/wvlet/log?branch=master
 
+**NOTICE** wvlet-log has been renamed to [Airframe Log](http://wvlet.org/airframe/docs/airframe-log.html), and you can fing the latest source code under [wvlet/airframe](https://github.com/wvlet/airframe). 
+
+-----
+
 wvlet-log is a libray for enhancing your Scala application logging with colors and source code locations. Here are examples of pre-defined LogFormatters in wvlet-log:
 
 <p align="center"><img src="https://github.com/wvlet/log/raw/master/docs/images/formatters.png" alt="screenshot" style="max-width:100%;"></p>
