@@ -5,7 +5,7 @@
 [coverall-badge-svg]: https://coveralls.io/repos/github/wvlet/log/badge.svg?branch=master
 [coverall-link]: https://coveralls.io/github/wvlet/log?branch=master
 
-**NOTICE** wvlet-log has been renamed to [Airframe Log](http://wvlet.org/airframe/docs/airframe-log.html) and merged into Airframe project. You can fing the latest source code under [wvlet/airframe](https://github.com/wvlet/airframe). 
+**NOTICE**: **wvlet-log has been renamed to [Airframe Log](http://wvlet.org/airframe/docs/airframe-log.html) and merged into Airframe project. You can find the latest source code under [wvlet/airframe](https://github.com/wvlet/airframe).**
 
 -----
 
